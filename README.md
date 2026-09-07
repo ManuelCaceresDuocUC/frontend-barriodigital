@@ -1,7 +1,7 @@
 # Proyecto: BarrioDigital - Frontend
 
 **Componente:** Aplicación Web (Frontend / Interfaz de Usuario)
-**Integrantes:** [Nombre Apellido 1], [Nombre Apellido 2], [Nombre Apellido 3]
+**Integrantes:** Manuel Cáceres Marín.
 
 ## Descripción
 Interfaz de usuario SPA (Single Page Application) para la plataforma BarrioDigital. Este componente permite a los distintos actores (Vecinos, Funcionarios, Auditores y Administradores) interactuar con el sistema según su rol. Facilita el ingreso y seguimiento de trámites, administración de catálogos y cupos, visualización del timeline de auditoría y acceso a paneles de reportería. Se integra de forma segura utilizando autenticación corporativa (IDaaS).
