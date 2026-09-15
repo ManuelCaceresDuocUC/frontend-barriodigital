@@ -1,43 +1,13 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { routes } from './app.routes';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { 
-  IPublicClientApplication, 
-  PublicClientApplication, 
-  InteractionType,
-  BrowserCacheLocation 
-} from '@azure/msal-browser';
-import { 
-  MsalService, 
-  MsalGuard, 
-  MsalBroadcastService, 
-  MSAL_INSTANCE, 
-  MSAL_GUARD_CONFIG, 
-  MsalGuardConfiguration 
-} from '@azure/msal-angular';
-import { environment } from '../environments/environment';
+import { routes } from './app.routes';
+import { PublicClientApplication } from '@azure/msal-browser';
+import { MSAL_INSTANCE, MSAL_GUARD_CONFIG, MsalService, MsalGuard, MsalBroadcastService } from '@azure/msal-angular';
+import { msalConfig, msalGuardConfig } from './auth-config';
 
-export function MSALInstanceFactory(): IPublicClientApplication {
-  return new PublicClientApplication({
-    auth: {
-      clientId: environment.azureAd.clientId,
-      authority: environment.azureAd.authority,
-      redirectUri: environment.azureAd.redirectUri
-    },
-    cache: {
-      cacheLocation: BrowserCacheLocation.LocalStorage
-    }
-  });
-}
-
-export function MSALGuardConfigFactory(): MsalGuardConfiguration {
-  return {
-    interactionType: InteractionType.Redirect,
-    authRequest: {
-      scopes: ['user.read']
-    }
-  };
+export function MSALInstanceFactory() {
+  return new PublicClientApplication(msalConfig);
 }
 
 export const appConfig: ApplicationConfig = {
@@ -51,7 +21,7 @@ export const appConfig: ApplicationConfig = {
     },
     {
       provide: MSAL_GUARD_CONFIG,
-      useFactory: MSALGuardConfigFactory
+      useValue: msalGuardConfig
     },
     MsalService,
     MsalGuard,
