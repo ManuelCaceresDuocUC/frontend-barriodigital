@@ -1,6 +1,5 @@
 import { LogLevel, PublicClientApplication, InteractionType } from '@azure/msal-browser';
-import { MsalGuardConfiguration } from '@azure/msal-angular';
-
+import { MsalGuardConfiguration, MsalInterceptorConfiguration } from '@azure/msal-angular';
 export const msalConfig = {
   auth: {
     clientId: '2fc5d9c1-8b42-4674-b0dc-23990c22f370',
@@ -19,4 +18,13 @@ export const msalGuardConfig: MsalGuardConfiguration = {
   authRequest: {
     scopes: ['openid', 'profile', 'email', 'user.read']
   }
+};
+
+export const msalInterceptorConfig: MsalInterceptorConfiguration = {
+  interactionType: InteractionType.Redirect,
+  protectedResourceMap: new Map([
+    // Asumiendo que tu BFF correrá en localhost:8080.
+    // MSAL adjuntará el token a cualquier petición HTTP que comience con esta URL.
+    ['http://localhost:8080/*', ['openid', 'profile', 'user.read']]
+  ])
 };
