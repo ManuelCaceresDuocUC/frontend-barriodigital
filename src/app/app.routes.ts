@@ -6,6 +6,8 @@ import { LoginComponent } from './pages/login/login';
 import { DashboardComponent } from './pages/dashboard/dashboard';
 import { Requests } from './pages/requests/requests';
 import { Catalog } from './pages/catalog/catalog';
+import { Audit } from './pages/audit/audit';
+import { Reports } from './pages/reports/reports';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -13,5 +15,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [MsalGuard] },
   { path: 'requests', component: Requests, canActivate: [MsalGuard] },
   { path: 'catalog', component: Catalog, canActivate: [MsalGuard] },
+  { path: 'reports', component: Reports, canActivate: [MsalGuard] },
+  { path: 'audit', component: Audit, canActivate: [MsalGuard] },
   { path: '**', redirectTo: 'login' }
 ];
