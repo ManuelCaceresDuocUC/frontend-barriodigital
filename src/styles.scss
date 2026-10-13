@@ -1,1 +1,23 @@
 /* You can add global styles to this file, and also import other style files */
+:root {
+  --azure-blue: #0078D4;
+  --azure-blue-hover: #106EBE;
+  --azure-navy: #002050;
+  --azure-cyan: #00BCF2;
+  --bg-main: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --border-color: #E2E8F0;
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --status-pending: #F59E0B;
+  --status-completed: #10B981;
+  --status-rejected: #EF4444;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+}

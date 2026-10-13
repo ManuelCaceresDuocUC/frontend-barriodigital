@@ -1,1 +1,28 @@
-<p>catalog works!</p>
+<div class="catalog-container">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Catálogo de Servicios Municipales</h1>
+      <p class="page-subtitle">Explora y tramita los servicios disponibles para tu comunidad</p>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar servicio o trámite..." class="azure-input">
+    </div>
+  </header>
+
+  <!-- Catalog Grid -->
+  <div class="services-grid">
+    <div class="service-card" *ngFor="let item of filteredServices">
+      <div class="card-icon">{{ item.icon }}</div>
+      <span class="category-tag">{{ item.category }}</span>
+      <h3 class="service-title">{{ item.title }}</h3>
+      <p class="service-desc">{{ item.description }}</p>
+      
+      <div class="card-footer">
+        <span class="eta-text">⏱ Est. {{ item.estimatedDays }} días hábiles</span>
+        <a routerLink="/requests" class="btn-card-action">Solicitar →</a>
+      </div>
+    </div>
+  </div>
+</div>

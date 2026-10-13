@@ -1,11 +1,13 @@
 import { LogLevel, PublicClientApplication, InteractionType } from '@azure/msal-browser';
 import { MsalGuardConfiguration, MsalInterceptorConfiguration } from '@azure/msal-angular';
+
 export const msalConfig = {
   auth: {
     clientId: '2fc5d9c1-8b42-4674-b0dc-23990c22f370',
-    authority: 'https://login.microsoftonline.com/ffcb40ec-aa43-4c4e-acd8-4d27467872c5',
-    redirectUri: 'http://localhost:4200/dashboard', // Cambiado de https a http
-    postLogoutRedirectUri: 'http://localhost:4200/login' // Cambiado de https a http
+    // 1. Agregamos /v2.0 para forzar el emisor v2 que exige AWS API Gateway
+    authority: 'https://login.microsoftonline.com/ffcb40ec-aa43-4c4e-acd8-4d27467872c5/v2.0',
+    redirectUri: 'http://localhost:4200/dashboard',
+    postLogoutRedirectUri: 'http://localhost:4200/login'
   },
   cache: {
     cacheLocation: 'localStorage',
@@ -16,6 +18,7 @@ export const msalConfig = {
 export const msalGuardConfig: MsalGuardConfiguration = {
   interactionType: InteractionType.Redirect,
   authRequest: {
+    // Scopes iniciales para autenticar la identidad del usuario
     scopes: ['openid', 'profile', 'email', 'user.read']
   }
 };
@@ -23,8 +26,9 @@ export const msalGuardConfig: MsalGuardConfiguration = {
 export const msalInterceptorConfig: MsalInterceptorConfiguration = {
   interactionType: InteractionType.Redirect,
   protectedResourceMap: new Map([
-    // Asumiendo que tu BFF correrá en localhost:8080.
-    // MSAL adjuntará el token a cualquier petición HTTP que comience con esta URL.
-    ['http://localhost:8080/*', ['openid', 'profile', 'user.read']]
+    [
+      'https://lkbz5es695.execute-api.us-east-1.amazonaws.com/*', 
+      ['api://2fc5d9c1-8b42-4674-b0dc-23990c22f370/access_as_user']
+    ]
   ])
 };
