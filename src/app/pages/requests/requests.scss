@@ -1,0 +1,68 @@
+.requests-page { max-width: 1100px; margin: 0 auto; }
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-title { font-size: 1.5rem; color: #002050; margin: 0; }
+.page-subtitle { color: #64748B; margin: 0.2rem 0 0 0; font-size: 0.9rem; }
+
+.btn-primary {
+  background-color: #0078D4;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #E2E8F0;
+  color: #334155;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.table-card {
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.azure-table { width: 100%; border-collapse: collapse; text-align: left; }
+.azure-table th { padding: 0.85rem 1rem; background: #F8FAFC; color: #475569; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid #E2E8F0; }
+.azure-table td { padding: 1rem; border-bottom: 1px solid #E2E8F0; font-size: 0.9rem; }
+
+.category-pill { background: #E0F2FE; color: #0369A1; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; }
+.status-badge { padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #FEF3C7; color: #D97706; }
+
+.empty-state, .loading-state { text-align: center; padding: 2rem; color: #64748B; }
+
+/* Modal Backdrop */
+.modal-backdrop {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 32, 80, 0.4);
+  display: flex; align-items: center; justify-content: center; z-index: 200;
+}
+
+.modal-card { background: white; padding: 1.75rem; border-radius: 10px; width: 100%; max-width: 500px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+.form-group { margin-bottom: 1rem; display: flex; flex-direction: column; }
+.form-row { display: flex; gap: 1rem; }
+.half { flex: 1; }
+.azure-input { padding: 0.6rem; border: 1px solid #CBD5E1; border-radius: 6px; outline: none; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+.status-badge.ingresado { background: #E0F2FE; color: #0369A1; }
+.status-badge.en_proceso { background: #FEF3C7; color: #D97706; }
+.status-badge.completado { background: #D1FAE5; color: #059669; }
+.status-badge.rechazado { background: #FEE2E2; color: #DC2626; }

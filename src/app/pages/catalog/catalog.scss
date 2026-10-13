@@ -1,0 +1,83 @@
+.catalog-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-box {
+  min-width: 300px;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.service-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  border-color: var(--azure-cyan);
+}
+
+.card-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.category-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--azure-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.service-title {
+  font-size: 1.15rem;
+  color: var(--azure-navy);
+  margin: 0.5rem 0;
+}
+
+.service-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  flex-grow: 1;
+  line-height: 1.4;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.eta-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.btn-card-action {
+  color: var(--azure-blue);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.btn-card-action:hover {
+  text-decoration: underline;
+}

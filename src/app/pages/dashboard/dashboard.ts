@@ -1,46 +1,49 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MsalService } from '@azure/msal-angular';
+
+interface NewsItem {
+  id: number;
+  title: string;
+  category: string;
+  date: string;
+  summary: string;
+  imageIcon: string;
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  template: `
-    <div class="container">
-      <header>
-        <h2>Bienvenido, {{ userName }}</h2>
-        <p>Tu rol en el sistema: <strong>{{ userRoles.join(', ') }}</strong></p>
-        <button (click)="logout()">Cerrar Sesión</button>
-      </header>
-      
-      <nav class="dashboard-menu">
-        <a routerLink="/requests" class="card">Gestión de Trámites</a>
-        <a routerLink="/catalog" class="card" *ngIf="hasRole('Admin') || hasRole('Operador') || hasRole('Cliente')">Catálogo y Cupos</a>
-      </nav>
-    </div>
-  `
+  templateUrl: './dashboard.html',
+  styleUrls: ['./dashboard.scss']
 })
-export class DashboardComponent implements OnInit {
-  userName: string = '';
-  userRoles: string[] = [];
-
-  constructor(private authService: MsalService) {}
-
-  ngOnInit(): void {
-    const activeAccount = this.authService.instance.getAllAccounts()[0];
-    if (activeAccount) {
-      this.userName = activeAccount.name || 'Usuario';
-      this.userRoles = (activeAccount.idTokenClaims as any)?.roles || ['Cliente'];
+export class Dashboard {
+  // Noticias Comunales
+  newsList: NewsItem[] = [
+    {
+      id: 1,
+      title: 'Corte Programado de Agua Potable por Mantención',
+      category: 'Servicios Básicos',
+      date: '28 Sep 2026',
+      summary: 'El sector norte tendrá suspensión temporal del servicio entre las 22:00 y las 06:00 hrs.',
+      imageIcon: '🚰'
+    },
+    {
+      id: 2,
+      title: 'Inauguración de la Nueva Plaza de la Infancia',
+      category: 'Comunidad',
+      date: '26 Sep 2026',
+      summary: 'Contamos con más de 1.500 m² de áreas verdes y juegos inclusivos para las familias.',
+      imageIcon: '🌳'
+    },
+    {
+      id: 3,
+      title: 'Operativo Gratuito de Vacunación de Mascotas',
+      category: 'Salud Animal',
+      date: '24 Sep 2026',
+      summary: 'Este sábado en la junta de vecinos #12 se aplicarán vacunas antirrábicas y microchips.',
+      imageIcon: '🐶'
     }
-  }
-
-  hasRole(role: string): boolean {
-    return this.userRoles.includes(role);
-  }
-
-  logout() {
-    this.authService.logoutRedirect();
-  }
+  ];
 }

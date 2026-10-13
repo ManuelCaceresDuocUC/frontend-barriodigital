@@ -1,1 +1,49 @@
-<p>dashboard works!</p>
+<div class="dashboard-page">
+  <!-- Banner de Bienvenida -->
+  <header class="welcome-banner">
+    <div>
+      <h1>Bienvenido a BarrioDigital 🏙️</h1>
+      <p>Gestión transparente de requerimientos comunales y novedades vecinales.</p>
+    </div>
+    <a routerLink="/requests" class="btn-azure">+ Crear Solicitud</a>
+  </header>
+
+  <!-- Sección de Noticias Comunales -->
+  <section class="section-container">
+    <div class="section-header">
+      <h2>📢 Noticias Comunales</h2>
+      <span class="badge-tag">Actualizado hoy</span>
+    </div>
+
+    <div class="news-grid">
+      <div class="news-card" *ngFor="let news of newsList">
+        <div class="news-icon">{{ news.imageIcon }}</div>
+        <div class="news-content">
+          <div class="news-meta">
+            <span class="news-category">{{ news.category }}</span>
+            <span class="news-date">{{ news.date }}</span>
+          </div>
+          <h3 class="news-title">{{ news.title }}</h3>
+          <p class="news-summary">{{ news.summary }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resumen de Módulos Directos -->
+  <section class="modules-grid">
+    <div class="module-card">
+      <div class="module-icon">📋</div>
+      <h3>Gestión de Solicitudes</h3>
+      <p>Revisa el estado en tiempo real de tus trámites o ingresa una nueva solicitud de mantención urbana.</p>
+      <a routerLink="/requests" class="module-link">Ir a Solicitudes →</a>
+    </div>
+
+    <div class="module-card">
+      <div class="module-icon">🗂️</div>
+      <h3>Catálogo de Servicios</h3>
+      <p>Consulta los requisitos y tiempos estimados de respuesta para cada servicio municipal.</p>
+      <a routerLink="/catalog" class="module-link">Explorar Catálogo →</a>
+    </div>
+  </section>
+</div>

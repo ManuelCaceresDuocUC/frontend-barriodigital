@@ -1,1 +1,135 @@
-<p>requests works!</p>
+<div class="requests-page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Solicitudes</h1>
+      <p class="page-subtitle">Listado oficial de requerimientos registrados en el sistema municipal</p>
+    </div>
+    <!-- Solo visible para Clientes (Vecinos) y Admins -->
+    <button 
+      *ngIf="authService.hasAnyRole(['Cliente', 'Admin'])" 
+      (click)="showModal = true" 
+      class="btn-primary">
+      + Nueva Solicitud
+    </button>
+  </header>
+
+  <!-- Tabla de Solicitudes -->
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">
+      Obteniendo datos desde API Gateway...
+    </div>
+
+    <table *ngIf="!isLoading" class="azure-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tipo / Categoría</th>
+          <th>Descripción</th>
+          <th>Fecha Creación</th>
+          <th>Estado</th>
+          <!-- Encabezado visible solo para Operador y Admin -->
+          <th *ngIf="authService.hasAnyRole(['Operador', 'Admin'])">Acciones de Cambio de Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of requestsList">
+          <td class="font-mono">#{{ item.id }}</td>
+          <td>
+            <span class="category-pill">{{ item.type || 'Sin Tipo' }}</span>
+          </td>
+          <td>{{ item.description || 'Sin Descripción' }}</td>
+          <td>{{ item.createdAt }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="item.status?.toLowerCase() || 'ingresado'">
+              {{ item.status }}
+            </span>
+          </td>
+
+          <!-- Columna con botones de transición según el estado actual -->
+          <td *ngIf="authService.hasAnyRole(['Operador', 'Admin'])">
+            <div class="action-buttons">
+              <!-- Transición de INGRESADO -> ADMITIDO -->
+              <button 
+                *ngIf="item.status === 'INGRESADO'" 
+                (click)="updateStatus(item.id, 'ADMITIDO')" 
+                class="btn-action btn-admit">
+                Admitir
+              </button>
+
+              <!-- Transición de ADMITIDO -> EN_GESTION -->
+              <button 
+                *ngIf="item.status === 'ADMITIDO'" 
+                (click)="updateStatus(item.id, 'EN_GESTION')" 
+                class="btn-action btn-manage">
+                Gestionar
+              </button>
+
+              <!-- Transición de EN_GESTION -> EN_TERRENO -->
+              <button 
+                *ngIf="item.status === 'EN_GESTION'" 
+                (click)="updateStatus(item.id, 'EN_TERRENO')" 
+                class="btn-action btn-terrain">
+                Pasar a Terreno
+              </button>
+
+              <!-- Transición de EN_TERRENO -> RESUELTO -->
+              <button 
+                *ngIf="item.status === 'EN_TERRENO'" 
+                (click)="updateStatus(item.id, 'RESUELTO')" 
+                class="btn-action btn-resolve">
+                Resolver
+              </button>
+
+              <!-- Opción de Rechazar disponible en etapas iniciales -->
+              <button 
+                *ngIf="item.status === 'INGRESADO' || item.status === 'ADMITIDO'" 
+                (click)="updateStatus(item.id, 'RECHAZADO')" 
+                class="btn-action btn-reject">
+                Rechazar
+              </button>
+            </div>
+          </td>
+        </tr>
+        
+        <tr *ngIf="requestsList.length === 0">
+          <td [attr.colspan]="authService.hasAnyRole(['Operador', 'Admin']) ? 6 : 5" class="empty-state">
+            No hay solicitudes registradas actualmente.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal para Crear Solicitud -->
+  <div class="modal-backdrop" *ngIf="showModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Registrar Nueva Solicitud</h3>
+        <button class="close-btn" (click)="showModal = false">×</button>
+      </div>
+
+      <form [formGroup]="requestForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label>Tipo de Requerimiento *</label>
+          <select formControlName="type" class="azure-input">
+            <option value="" disabled selected>Selecciona una opción</option>
+            <option value="ALUMBRADO">Alumbrado Público</option>
+            <option value="ASEO">Aseo y Ornato</option>
+            <option value="INFRAESTRUCTURA">Infraestructura Vial</option>
+            <option value="SEGURIDAD">Seguridad Ciudadana</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción *</label>
+          <textarea formControlName="description" rows="4" class="azure-input" placeholder="Detalla el motivo de la solicitud..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="showModal = false">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Solicitud</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

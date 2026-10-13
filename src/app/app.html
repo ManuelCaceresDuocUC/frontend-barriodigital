@@ -1,1 +1,42 @@
-<router-outlet></router-outlet>
+<div class="app-layout">
+  <!-- Sidebar Izquierdo Azure -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">BD</div>
+      <div class="brand-text">
+        <h2>BarrioDigital</h2>
+        <span>Portal Ciudadano</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a routerLink="/requests" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📝</span>
+        <span>Mis Solicitudes</span>
+      </a>
+      <a routerLink="/catalog" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🗂️</span>
+        <span>Catálogo Servicios</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-profile">
+        <div class="avatar">AD</div>
+        <div class="user-info">
+          <span class="user-name">Usuario Azure AD</span>
+          <span class="user-role">Vecino Verificado</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Área Principal de Contenido -->
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
