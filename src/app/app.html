@@ -19,7 +19,7 @@
         <span class="nav-icon">📝</span>
         <span>{{ authService.hasRole('Cliente') ? 'Mis Solicitudes' : 'Gestión Solicitudes' }}</span>
       </a>
-      <a *ngIf="authService.hasRole('Admin')" routerLink="/catalog" routerLinkActive="active" class="nav-item">
+      <a *ngIf="authService.hasAnyRole(['Admin', 'Operador'])" routerLink="/catalog" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🗂️</span>
         <span>Catálogo Servicios</span>
       </a>
