@@ -66,3 +66,45 @@
 .status-badge.en_proceso { background: #FEF3C7; color: #D97706; }
 .status-badge.completado { background: #D1FAE5; color: #059669; }
 .status-badge.rechazado { background: #FEE2E2; color: #DC2626; }
+
+/* Agregar AL FINAL de requests.scss */
+
+.alert-error {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid #f1b0b7;
+  border-left: 4px solid #d13438;
+  border-radius: 4px;
+  background: #fdf3f4;
+  color: #8a1c20;
+  font-size: 14px;
+}
+
+.form-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #605e5c;
+}
+
+.form-error {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #a4262c;
+}
+
+.requirements-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 4px solid #0078d4;
+  border-radius: 4px;
+  background: #eff6fc;
+  color: #323130;
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+.btn-action:disabled,
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

@@ -1,17 +1,24 @@
 <div class="requests-page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">Gestión de Solicitudes</h1>
-      <p class="page-subtitle">Listado oficial de requerimientos registrados en el sistema municipal</p>
+      <h1 class="page-title">
+        {{ authService.hasRole('Cliente') && !authService.hasAnyRole(['Operador', 'Admin']) ? 'Mis Solicitudes' : 'Gestión Municipal de Solicitudes' }}
+      </h1>
+      <p class="page-subtitle">
+        {{ authService.hasRole('Cliente') && !authService.hasAnyRole(['Operador', 'Admin']) ? 'Historial de tus trámites e incidencias ingresadas' : 'Listado general de requerimientos ciudadanos' }}
+      </p>
     </div>
-    <!-- Solo visible para Clientes (Vecinos) y Admins -->
+    <!-- Visible para Clientes (Vecinos) y Admins -->
     <button 
       *ngIf="authService.hasAnyRole(['Cliente', 'Admin'])" 
-      (click)="showModal = true" 
+      (click)="openModal()" 
       class="btn-primary">
       + Nueva Solicitud
     </button>
   </header>
+
+  <!-- Error de página (cargar solicitudes, cambiar estado: ej. 409 sin cupo) -->
+  <div class="alert-error" *ngIf="pageError" role="alert">{{ pageError }}</div>
 
   <!-- Tabla de Solicitudes -->
   <div class="table-card">
@@ -25,10 +32,12 @@
           <th>ID</th>
           <th>Tipo / Categoría</th>
           <th>Descripción</th>
+          <!-- Columna Solicitante (Visible para Operadores, Admins y Auditores) -->
+          <th *ngIf="authService.hasAnyRole(['Operador', 'Admin', 'Auditor'])">Solicitante / Vecino</th>
           <th>Fecha Creación</th>
           <th>Estado</th>
-          <!-- Encabezado visible solo para Operador y Admin -->
-          <th *ngIf="authService.hasAnyRole(['Operador', 'Admin'])">Acciones de Cambio de Estado</th>
+          <!-- Acciones para Operador y Admin -->
+          <th *ngIf="authService.hasAnyRole(['Operador', 'Admin'])">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -38,6 +47,12 @@
             <span class="category-pill">{{ item.type || 'Sin Tipo' }}</span>
           </td>
           <td>{{ item.description || 'Sin Descripción' }}</td>
+          
+          <!-- Datos del Solicitante -->
+          <td *ngIf="authService.hasAnyRole(['Operador', 'Admin', 'Auditor'])" class="user-cell">
+            <span class="user-email-tag">{{ item.userEmail || item.userId || 'Vecino Registrado' }}</span>
+          </td>
+
           <td>{{ item.createdAt }}</td>
           <td>
             <span class="status-badge" [ngClass]="item.status?.toLowerCase() || 'ingresado'">
@@ -45,45 +60,45 @@
             </span>
           </td>
 
-          <!-- Columna con botones de transición según el estado actual -->
+          <!-- Botones de transición -->
           <td *ngIf="authService.hasAnyRole(['Operador', 'Admin'])">
             <div class="action-buttons">
-              <!-- Transición de INGRESADO -> ADMITIDO -->
               <button 
                 *ngIf="item.status === 'INGRESADO'" 
                 (click)="updateStatus(item.id, 'ADMITIDO')" 
+                [disabled]="isUpdating"
                 class="btn-action btn-admit">
                 Admitir
               </button>
 
-              <!-- Transición de ADMITIDO -> EN_GESTION -->
               <button 
                 *ngIf="item.status === 'ADMITIDO'" 
                 (click)="updateStatus(item.id, 'EN_GESTION')" 
+                [disabled]="isUpdating"
                 class="btn-action btn-manage">
                 Gestionar
               </button>
 
-              <!-- Transición de EN_GESTION -> EN_TERRENO -->
               <button 
                 *ngIf="item.status === 'EN_GESTION'" 
                 (click)="updateStatus(item.id, 'EN_TERRENO')" 
+                [disabled]="isUpdating"
                 class="btn-action btn-terrain">
                 Pasar a Terreno
               </button>
 
-              <!-- Transición de EN_TERRENO -> RESUELTO -->
               <button 
                 *ngIf="item.status === 'EN_TERRENO'" 
                 (click)="updateStatus(item.id, 'RESUELTO')" 
+                [disabled]="isUpdating"
                 class="btn-action btn-resolve">
                 Resolver
               </button>
 
-              <!-- Opción de Rechazar disponible en etapas iniciales -->
               <button 
                 *ngIf="item.status === 'INGRESADO' || item.status === 'ADMITIDO'" 
                 (click)="updateStatus(item.id, 'RECHAZADO')" 
+                [disabled]="isUpdating"
                 class="btn-action btn-reject">
                 Rechazar
               </button>
@@ -92,8 +107,8 @@
         </tr>
         
         <tr *ngIf="requestsList.length === 0">
-          <td [attr.colspan]="authService.hasAnyRole(['Operador', 'Admin']) ? 6 : 5" class="empty-state">
-            No hay solicitudes registradas actualmente.
+          <td [attr.colspan]="authService.hasAnyRole(['Operador', 'Admin', 'Auditor']) ? 7 : 5" class="empty-state">
+            No hay solicitudes registradas para mostrar.
           </td>
         </tr>
       </tbody>
@@ -105,19 +120,27 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3>Registrar Nueva Solicitud</h3>
-        <button class="close-btn" (click)="showModal = false">×</button>
+        <button class="close-btn" (click)="closeModal()">×</button>
       </div>
 
       <form [formGroup]="requestForm" (ngSubmit)="onSubmit()">
         <div class="form-group">
           <label>Tipo de Requerimiento *</label>
-          <select formControlName="type" class="azure-input">
-            <option value="" disabled selected>Selecciona una opción</option>
-            <option value="ALUMBRADO">Alumbrado Público</option>
-            <option value="ASEO">Aseo y Ornato</option>
-            <option value="INFRAESTRUCTURA">Infraestructura Vial</option>
-            <option value="SEGURIDAD">Seguridad Ciudadana</option>
+          <select formControlName="procedureId" class="azure-input">
+            <option [ngValue]="null" disabled>Selecciona una opción</option>
+            <option *ngFor="let p of procedures" [ngValue]="p.id">{{ p.name }}</option>
           </select>
+
+          <p class="form-hint" *ngIf="proceduresLoading">Cargando tipos de trámite...</p>
+          <p class="form-error" *ngIf="proceduresError">{{ proceduresError }}</p>
+          <p class="form-error" *ngIf="!proceduresLoading && !proceduresError && procedures.length === 0">
+            No hay tipos de trámite disponibles por ahora. Inténtalo más tarde.
+          </p>
+
+          <!-- Requisitos del trámite elegido -->
+          <div class="requirements-box" *ngIf="selectedProcedure as proc">
+            <strong>Requisitos:</strong> {{ proc.requirements }}
+          </div>
         </div>
 
         <div class="form-group">
@@ -125,9 +148,13 @@
           <textarea formControlName="description" rows="4" class="azure-input" placeholder="Detalla el motivo de la solicitud..."></textarea>
         </div>
 
+        <div class="alert-error" *ngIf="formError" role="alert">{{ formError }}</div>
+
         <div class="modal-actions">
-          <button type="button" class="btn-secondary" (click)="showModal = false">Cancelar</button>
-          <button type="submit" class="btn-primary">Guardar Solicitud</button>
+          <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="isSaving || proceduresLoading || procedures.length === 0">
+            {{ isSaving ? 'Guardando...' : 'Guardar Solicitud' }}
+          </button>
         </div>
       </form>
     </div>

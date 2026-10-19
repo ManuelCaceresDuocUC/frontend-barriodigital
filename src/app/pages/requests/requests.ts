@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
-import { AuthService } from '../../services/auth.service'; // 1. Importar AuthService
+import { AuthService } from '../../services/auth.service';
+import { CatalogService, ProcedureType } from '../../services/catalog.service';
+import { environment } from '../../../environments/environment';
 
 export interface RequestModel {
   id?: number;
@@ -12,6 +14,7 @@ export interface RequestModel {
   status: string;
   createdAt: string;
   userId?: string | null;
+  userEmail?: string | null;
 }
 
 @Component({
@@ -26,14 +29,26 @@ export class Requests implements OnInit {
   isLoading = false;
   showModal = false;
   requestForm!: FormGroup;
-  
-  private apiUrl = 'https://lkbz5es695.execute-api.us-east-1.amazonaws.com/api/requests';
+
+  // Tipos de trámite (catálogo)
+  procedures: ProcedureType[] = [];
+  proceduresLoading = false;
+  proceduresError: string | null = null;
+
+  // Estado de las peticiones en curso y errores visibles
+  isSaving = false;
+  isUpdating = false;
+  formError: string | null = null;
+  pageError: string | null = null;
+
+  private apiUrl = `${environment.apiBffUrl}/api/requests`;
 
   constructor(
-    private fb: FormBuilder, 
+    private fb: FormBuilder,
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    public authService: AuthService // 2. Inyectar AuthService como público para usarlo en el HTML
+    private catalogService: CatalogService,
+    public authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -43,13 +58,55 @@ export class Requests implements OnInit {
 
   initForm(): void {
     this.requestForm = this.fb.group({
-      type: ['', Validators.required],
-      description: ['', [Validators.required, Validators.minLength(5)]]
+      procedureId: [null, Validators.required],
+      description: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]]
     });
+  }
+
+  /** Tipo de trámite elegido en el formulario (para mostrar sus requisitos). */
+  get selectedProcedure(): ProcedureType | null {
+    const id = this.requestForm?.value?.procedureId;
+    return this.procedures.find(p => p.id === id) ?? null;
+  }
+
+  openModal(): void {
+    this.formError = null;
+    this.requestForm.reset({ procedureId: null, description: '' });
+    this.showModal = true;
+    this.loadProcedures();
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.formError = null;
+  }
+
+  loadProcedures(): void {
+    this.proceduresLoading = true;
+    this.proceduresError = null;
+
+    this.catalogService.list()
+      .pipe(
+        finalize(() => {
+          this.proceduresLoading = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (data) => {
+          this.procedures = (Array.isArray(data) ? data : []).filter(p => p.active);
+        },
+        error: (err) => {
+          console.error('Error al cargar el catálogo:', err);
+          this.procedures = [];
+          this.proceduresError = this.errorMessage(err, 'No se pudieron cargar los tipos de trámite.');
+        }
+      });
   }
 
   fetchRequests(): void {
     this.isLoading = true;
+    this.pageError = null;
 
     this.http.get<any[]>(this.apiUrl)
       .pipe(
@@ -60,10 +117,12 @@ export class Requests implements OnInit {
       )
       .subscribe({
         next: (data) => {
-          console.log('Datos recibidos:', data);
           const rawList = Array.isArray(data) ? data : [];
+          const currentUserId = this.authService.getUserOid();
+          const currentUserEmail = this.authService.getUserEmail();
 
-          this.requestsList = rawList.map(item => {
+          // Map completo de datos de solicitudes
+          let parsedList: RequestModel[] = rawList.map(item => {
             let formattedDate = 'Sin Fecha';
             if (item && item.createdAt) {
               formattedDate = String(item.createdAt).replace('T', ' ').split('.')[0];
@@ -75,12 +134,25 @@ export class Requests implements OnInit {
               description: item?.description ?? 'Sin Descripción',
               status: item?.status ?? 'INGRESADO',
               createdAt: formattedDate,
-              userId: item?.userId ?? null
+              userId: item?.userId || item?.userEmail || item?.createdBy || null,
+              userEmail: item?.userEmail || item?.userId || 'Vecino Anónimo'
             };
           });
+
+          // REGLA CLAVE: Si es sólo Cliente (Vecino), filtrar únicamente SUS solicitudes
+          if (this.authService.hasRole('Cliente') && !this.authService.hasAnyRole(['Operador', 'Admin', 'Auditor'])) {
+            parsedList = parsedList.filter(req =>
+              req.userId === currentUserId ||
+              req.userId === currentUserEmail ||
+              req.userEmail === currentUserEmail
+            );
+          }
+
+          this.requestsList = parsedList;
         },
         error: (err) => {
           console.error('Error al conectar con la API:', err);
+          this.pageError = this.errorMessage(err, 'No se pudieron cargar las solicitudes.');
         }
       });
   }
@@ -90,48 +162,68 @@ export class Requests implements OnInit {
       this.requestForm.markAllAsTouched();
       return;
     }
+    if (this.isSaving) return;
 
+    this.isSaving = true;
+    this.formError = null;
+
+    // La identidad (userId) sigue viniendo del cliente; pasará al JWT en un issue aparte.
     const payload = {
-      type: this.requestForm.value.type,
+      procedureId: this.requestForm.value.procedureId,
       description: this.requestForm.value.description,
-      status: 'INGRESADO'
+      userId: this.authService.getUserOid()
     };
 
-    this.http.post(this.apiUrl, payload).subscribe({
-      next: () => {
-        this.showModal = false;
-        this.requestForm.reset();
-        this.fetchRequests();
-      },
-      error: (err) => {
-        console.error('Error al guardar:', err);
-        alert('Ocurrió un error al guardar la solicitud.');
-      }
-    });
-  }
-
-  // 3. Nuevo método para cambiar el estado de la solicitud (Máquina de Estados)
-  updateStatus(id?: number, newStatus?: string): void {
-    if (!id || !newStatus) return;
-
-    this.isLoading = true;
-    const body = { status: newStatus };
-
-    this.http.put(`${this.apiUrl}/${id}/status`, body)
+    this.http.post(this.apiUrl, payload)
       .pipe(
         finalize(() => {
-          this.isLoading = false;
+          this.isSaving = false;
           this.cdr.detectChanges();
         })
       )
       .subscribe({
         next: () => {
-          this.fetchRequests(); // Recargar la lista tras actualizar
+          this.closeModal();
+          this.requestForm.reset({ procedureId: null, description: '' });
+          this.fetchRequests();
+        },
+        error: (err) => {
+          console.error('Error al guardar:', err);
+          this.formError = this.errorMessage(err, 'Ocurrió un error al guardar la solicitud.');
+        }
+      });
+  }
+
+  updateStatus(id?: number, newStatus?: string): void {
+    if (!id || !newStatus || this.isUpdating) return;
+
+    this.isUpdating = true;
+    this.pageError = null;
+    const body = { status: newStatus };
+
+    this.http.put(`${this.apiUrl}/${id}/status`, body)
+      .pipe(
+        finalize(() => {
+          this.isUpdating = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.fetchRequests();
         },
         error: (err) => {
           console.error('Error al actualizar estado:', err);
-          alert(err?.error?.message || 'Error al actualizar el estado de la solicitud.');
+          this.pageError = this.errorMessage(err, 'Error al actualizar el estado de la solicitud.');
         }
       });
+  }
+
+  /** Mensaje del servidor si lo hay (409 sin cupo, 400 validación...), o uno genérico. */
+  private errorMessage(err: any, fallback: string): string {
+    if (err?.status === 0) {
+      return 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+    }
+    return err?.error?.message || fallback;
   }
 }
