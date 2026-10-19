@@ -27,11 +27,11 @@ export const routes: Routes = [
     canActivate: [MsalGuard, roleGuard(['Cliente', 'Operador', 'Admin'])] 
   },
   
-  // Catálogo: Exclusivo Admin
+  // Catálogo: Admin administra; Operador solo consulta
   { 
     path: 'catalog', 
     component: Catalog, 
-    canActivate: [MsalGuard, roleGuard(['Admin'])] 
+    canActivate: [MsalGuard, roleGuard(['Admin', 'Operador'])] 
   },
   
   // Reportería (KPIs): Exclusivo Admin

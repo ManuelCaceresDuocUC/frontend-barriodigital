@@ -1,28 +1,112 @@
-<div class="catalog-container">
+<div class="catalog-page">
   <header class="page-header">
     <div>
-      <h1 class="page-title">Catálogo de Servicios Municipales</h1>
-      <p class="page-subtitle">Explora y tramita los servicios disponibles para tu comunidad</p>
+      <h1 class="page-title">Catálogo de Trámites</h1>
+      <p class="page-subtitle">
+        {{ isAdmin ? 'Administra los tipos de trámite, sus requisitos y el cupo diario' : 'Consulta los tipos de trámite, sus requisitos y el cupo diario' }}
+      </p>
     </div>
-    
-    <!-- Search Bar -->
-    <div class="search-box">
-      <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar servicio o trámite..." class="azure-input">
+
+    <div class="header-actions">
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar trámite..." class="azure-input search-input">
+      <button *ngIf="isAdmin" (click)="openCreate()" class="btn-primary">+ Nuevo tipo</button>
     </div>
   </header>
 
-  <!-- Catalog Grid -->
-  <div class="services-grid">
-    <div class="service-card" *ngFor="let item of filteredServices">
-      <div class="card-icon">{{ item.icon }}</div>
-      <span class="category-tag">{{ item.category }}</span>
-      <h3 class="service-title">{{ item.title }}</h3>
-      <p class="service-desc">{{ item.description }}</p>
-      
-      <div class="card-footer">
-        <span class="eta-text">⏱ Est. {{ item.estimatedDays }} días hábiles</span>
-        <a routerLink="/requests" class="btn-card-action">Solicitar →</a>
+  <div class="alert-error" *ngIf="pageError" role="alert">{{ pageError }}</div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">Cargando catálogo...</div>
+
+    <table *ngIf="!isLoading" class="azure-table">
+      <thead>
+        <tr>
+          <th>Trámite</th>
+          <th>Requisitos</th>
+          <th>Cupo diario</th>
+          <th>Usado hoy</th>
+          <th>Estado</th>
+          <th *ngIf="isAdmin">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of filteredProcedures; trackBy: trackById" [class.row-inactive]="!p.active">
+          <td><span class="category-pill">{{ p.name }}</span></td>
+          <td class="req-cell">{{ p.requirements }}</td>
+          <td>{{ p.dailyQuota }}</td>
+          <td [class.quota-full]="p.usedToday !== null && p.usedToday >= p.dailyQuota">
+            {{ p.usedToday !== null ? p.usedToday + ' / ' + p.dailyQuota : '—' }}
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="p.active ? 'activo' : 'inactivo'">
+              {{ p.active ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+
+          <td *ngIf="isAdmin">
+            <div class="action-buttons" *ngIf="pendingDeactivateId !== p.id">
+              <button class="btn-action btn-edit" (click)="openEdit(p)">Editar</button>
+              <button *ngIf="p.active" class="btn-action btn-danger" (click)="askDeactivate(p.id)">Desactivar</button>
+            </div>
+
+            <div class="action-buttons" *ngIf="pendingDeactivateId === p.id">
+              <span class="confirm-text">¿Desactivar?</span>
+              <button class="btn-action btn-danger" [disabled]="isDeactivating" (click)="confirmDeactivate(p.id)">
+                {{ isDeactivating ? 'Desactivando...' : 'Sí, desactivar' }}
+              </button>
+              <button class="btn-action btn-edit" [disabled]="isDeactivating" (click)="cancelDeactivate()">Cancelar</button>
+            </div>
+          </td>
+        </tr>
+
+        <tr *ngIf="filteredProcedures.length === 0">
+          <td [attr.colspan]="isAdmin ? 6 : 5" class="empty-state">
+            {{ procedures.length === 0 ? 'Aún no hay tipos de trámite en el catálogo.' : 'Ningún trámite coincide con la búsqueda.' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal crear / editar (solo Admin) -->
+  <div class="modal-backdrop" *ngIf="showModal && isAdmin">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>{{ editingId === null ? 'Nuevo tipo de trámite' : 'Editar tipo de trámite' }}</h3>
+        <button class="close-btn" (click)="closeModal()">×</button>
       </div>
+
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" formControlName="name" class="azure-input" [attr.maxlength]="nameMax" placeholder="Ej: Poda de árbol">
+          <p class="form-error" *ngIf="form.get('name')?.touched && form.get('name')?.hasError('required')">El nombre es obligatorio.</p>
+        </div>
+
+        <div class="form-group">
+          <label>Requisitos *</label>
+          <textarea formControlName="requirements" rows="4" class="azure-input" [attr.maxlength]="requirementsMax"
+                    placeholder="Qué debe presentar o indicar el vecino..."></textarea>
+          <p class="form-hint">{{ form.value.requirements?.length || 0 }} / {{ requirementsMax }}</p>
+          <p class="form-error" *ngIf="form.get('requirements')?.touched && form.get('requirements')?.hasError('required')">Los requisitos son obligatorios.</p>
+        </div>
+
+        <div class="form-group">
+          <label>Cupo diario *</label>
+          <input type="number" formControlName="dailyQuota" class="azure-input" min="0" step="1">
+          <p class="form-hint">Cantidad de solicitudes que se pueden admitir por día. Con 0 el trámite queda sin cupo.</p>
+          <p class="form-error" *ngIf="form.get('dailyQuota')?.touched && form.get('dailyQuota')?.invalid">Ingresa un número entero igual o mayor que 0.</p>
+        </div>
+
+        <div class="alert-error" *ngIf="formError" role="alert">{{ formError }}</div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="closeModal()" [disabled]="isSaving">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="isSaving">
+            {{ isSaving ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
