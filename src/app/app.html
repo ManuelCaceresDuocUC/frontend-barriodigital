@@ -9,6 +9,7 @@
       </div>
     </div>
 
+    <!-- Navegación Principal -->
     <nav class="sidebar-nav">
       <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">📊</span>
@@ -16,22 +17,37 @@
       </a>
       <a routerLink="/requests" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">📝</span>
-        <span>Mis Solicitudes</span>
+        <span>{{ authService.hasRole('Cliente') ? 'Mis Solicitudes' : 'Gestión Solicitudes' }}</span>
       </a>
-      <a routerLink="/catalog" routerLinkActive="active" class="nav-item">
+      <a *ngIf="authService.hasRole('Admin')" routerLink="/catalog" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🗂️</span>
         <span>Catálogo Servicios</span>
       </a>
+      <a *ngIf="authService.hasRole('Admin')" routerLink="/reports" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📈</span>
+        <span>Reportería / KPIs</span>
+      </a>
+      <a *ngIf="authService.hasAnyRole(['Auditor', 'Admin'])" routerLink="/audit" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">🔍</span>
+        <span>Auditoría</span>
+      </a>
     </nav>
 
+    <!-- Footer Dinámico de Usuario con Botón de Cerrar Sesión -->
     <div class="sidebar-footer">
       <div class="user-profile">
-        <div class="avatar">AD</div>
+        <div class="avatar">{{ authService.getUserInitials() }}</div>
         <div class="user-info">
-          <span class="user-name">Usuario Azure AD</span>
-          <span class="user-role">Vecino Verificado</span>
+          <span class="user-name" [title]="authService.getUserName()">{{ authService.getUserName() }}</span>
+          <span class="user-role">{{ authService.getPrimaryRole() }}</span>
+          <span class="user-email">{{ authService.getUserEmail() }}</span>
         </div>
       </div>
+
+      <button (click)="logout()" class="btn-logout" title="Cerrar Sesión Activa">
+        <span class="logout-icon">🚪</span>
+        <span>Cerrar Sesión</span>
+      </button>
     </div>
   </aside>
 
