@@ -55,6 +55,11 @@ export class CatalogService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
+  /** Solo Admin. Vuelve a ofrecer un tipo desactivado. Idempotente. */
+  activate(id: number): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/${id}/activate`, null);
+  }
+
   /** Admin y Operador. */
   quota(id: number): Observable<QuotaStatus> {
     return this.http.get<QuotaStatus>(`${this.baseUrl}/${id}/quota`);

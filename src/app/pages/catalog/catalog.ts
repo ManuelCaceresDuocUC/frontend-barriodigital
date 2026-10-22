@@ -38,6 +38,9 @@ export class Catalog implements OnInit {
   pendingDeactivateId: number | null = null;
   isDeactivating = false;
 
+  // Activar un tipo desactivado (id en curso, para deshabilitar los botones mientras responde)
+  activatingId: number | null = null;
+
   pageError: string | null = null;
 
   constructor(
@@ -190,6 +193,29 @@ export class Catalog implements OnInit {
         error: err => {
           console.error('Error al desactivar:', err);
           this.pageError = httpErrorMessage(err, 'No se pudo desactivar el tipo de trámite.');
+        }
+      });
+  }
+
+  /** Vuelve a ofrecer un tipo desactivado. No es destructivo, así que no pide confirmación. */
+  activate(id: number): void {
+    if (this.activatingId !== null) return;
+
+    this.activatingId = id;
+    this.pageError = null;
+
+    this.catalogService.activate(id)
+      .pipe(
+        finalize(() => {
+          this.activatingId = null;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: () => this.load(),
+        error: err => {
+          console.error('Error al activar:', err);
+          this.pageError = httpErrorMessage(err, 'No se pudo activar el tipo de trámite.');
         }
       });
   }

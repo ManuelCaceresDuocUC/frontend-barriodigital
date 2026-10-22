@@ -47,6 +47,9 @@
             <div class="action-buttons" *ngIf="pendingDeactivateId !== p.id">
               <button class="btn-action btn-edit" (click)="openEdit(p)">Editar</button>
               <button *ngIf="p.active" class="btn-action btn-danger" (click)="askDeactivate(p.id)">Desactivar</button>
+              <button *ngIf="!p.active" class="btn-action btn-edit" [disabled]="activatingId !== null" (click)="activate(p.id)">
+                {{ activatingId === p.id ? 'Activando...' : 'Activar' }}
+              </button>
             </div>
 
             <div class="action-buttons" *ngIf="pendingDeactivateId === p.id">
