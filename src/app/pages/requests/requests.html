@@ -148,6 +148,15 @@
           <textarea formControlName="description" rows="4" class="azure-input" placeholder="Detalla el motivo de la solicitud..."></textarea>
         </div>
 
+        <div class="form-group">
+          <label>RUT (opcional)</label>
+          <input type="text" formControlName="citizenRut" class="azure-input" maxlength="12" autocomplete="off" placeholder="12.345.678-5">
+          <p class="form-hint">Solo si necesitas un certificado. Puedes escribirlo con o sin puntos y guion.</p>
+          <p class="form-error" *ngIf="requestForm.get('citizenRut')?.touched && requestForm.get('citizenRut')?.hasError('rut')">
+            El RUT no es válido. Revisa el número y el dígito verificador.
+          </p>
+        </div>
+
         <div class="alert-error" *ngIf="formError" role="alert">{{ formError }}</div>
 
         <div class="modal-actions">
