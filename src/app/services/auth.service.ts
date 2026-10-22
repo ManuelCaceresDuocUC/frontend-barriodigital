@@ -3,6 +3,9 @@ import { MsalService } from '@azure/msal-angular';
 
 export type Role = 'Cliente' | 'Operador' | 'Admin' | 'Auditor';
 
+/** Roles que la aplicación reconoce. */
+const KNOWN_ROLES: Role[] = ['Cliente', 'Operador', 'Admin', 'Auditor'];
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   constructor(private msalService: MsalService) {}
@@ -11,10 +14,17 @@ export class AuthService {
     return this.msalService.instance.getActiveAccount();
   }
 
+  /**
+   * Roles del usuario. Quien está autenticado pero no trae ningún rol conocido (por ejemplo, un vecino
+   * que se registró solo) se trata como Cliente. Los roles del personal solo existen si se asignan en
+   * Azure: nunca se otorgan por defecto. Debe coincidir con la regla de los microservicios.
+   */
   getUserRoles(): string[] {
     const account = this.getActiveAccount();
     const claims = account?.idTokenClaims as { roles?: string[] };
-    return claims?.roles || [];
+    const roles = claims?.roles || [];
+    const hasKnownRole = roles.some(r => KNOWN_ROLES.includes(r as Role));
+    return hasKnownRole ? roles : [...roles, 'Cliente'];
   }
 
   hasRole(role: Role): boolean {
@@ -33,7 +43,8 @@ export class AuthService {
 
   getUserEmail(): string {
     const account = this.getActiveAccount();
-    return account?.username || 'sin-correo@barriodigital.cl';
+    const claims = account?.idTokenClaims as { email?: string };
+    return claims?.email || account?.username || 'sin-correo@barriodigital.cl';
   }
 
   getUserOid(): string {
