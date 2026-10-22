@@ -6,6 +6,7 @@ import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { CatalogService, ProcedureType } from '../../services/catalog.service';
 import { environment } from '../../../environments/environment';
+import { normalizeRut, rutValidator } from '../../utils/rut';
 
 export interface RequestModel {
   id?: number;
@@ -59,7 +60,8 @@ export class Requests implements OnInit {
   initForm(): void {
     this.requestForm = this.fb.group({
       procedureId: [null, Validators.required],
-      description: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]]
+      description: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]],
+      citizenRut: ['', [rutValidator]]
     });
   }
 
@@ -71,7 +73,7 @@ export class Requests implements OnInit {
 
   openModal(): void {
     this.formError = null;
-    this.requestForm.reset({ procedureId: null, description: '' });
+    this.requestForm.reset({ procedureId: null, description: '', citizenRut: '' });
     this.showModal = true;
     this.loadProcedures();
   }
@@ -158,9 +160,12 @@ export class Requests implements OnInit {
     this.formError = null;
 
     // El dueño de la solicitud lo determina el backend a partir del JWT; no se envía userId.
+    // El RUT es opcional: solo se envía si se escribió, ya normalizado ("12345678-5").
+    const citizenRut = normalizeRut(this.requestForm.value.citizenRut);
     const payload = {
       procedureId: this.requestForm.value.procedureId,
-      description: this.requestForm.value.description
+      description: this.requestForm.value.description,
+      ...(citizenRut ? { citizenRut } : {})
     };
 
     this.http.post(this.apiUrl, payload)
@@ -173,7 +178,7 @@ export class Requests implements OnInit {
       .subscribe({
         next: () => {
           this.closeModal();
-          this.requestForm.reset({ procedureId: null, description: '' });
+          this.requestForm.reset({ procedureId: null, description: '', citizenRut: '' });
           this.fetchRequests();
         },
         error: (err) => {
