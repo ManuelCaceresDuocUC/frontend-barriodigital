@@ -8,9 +8,9 @@
         {{ authService.hasRole('Cliente') && !authService.hasAnyRole(['Operador', 'Admin']) ? 'Historial de tus trámites e incidencias ingresadas' : 'Listado general de requerimientos ciudadanos' }}
       </p>
     </div>
-    <!-- Visible para Clientes (Vecinos) y Admins -->
+    <!-- Visible para Clientes (Vecinos), Operadores y Admins -->
     <button 
-      *ngIf="authService.hasAnyRole(['Cliente', 'Admin'])" 
+      *ngIf="authService.hasAnyRole(['Cliente', 'Operador', 'Admin'])" 
       (click)="openModal()" 
       class="btn-primary">
       + Nueva Solicitud
@@ -146,6 +146,16 @@
         <div class="form-group">
           <label>Descripción *</label>
           <textarea formControlName="description" rows="4" class="azure-input" placeholder="Detalla el motivo de la solicitud..."></textarea>
+        </div>
+
+        <!-- Solo Operador y Admin: la solicitud se ingresa a nombre de un vecino -->
+        <div class="form-group" *ngIf="isStaff">
+          <label>Correo del vecino *</label>
+          <input type="email" formControlName="citizenEmail" class="azure-input" maxlength="254" autocomplete="off" placeholder="vecino@correo.cl">
+          <p class="form-hint">A este correo se enviarán las notificaciones de la solicitud.</p>
+          <p class="form-error" *ngIf="requestForm.get('citizenEmail')?.touched && requestForm.get('citizenEmail')?.invalid">
+            Ingresa un correo válido.
+          </p>
         </div>
 
         <div class="form-group">

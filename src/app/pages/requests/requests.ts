@@ -61,8 +61,15 @@ export class Requests implements OnInit {
     this.requestForm = this.fb.group({
       procedureId: [null, Validators.required],
       description: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]],
-      citizenRut: ['', [rutValidator]]
+      citizenRut: ['', [rutValidator]],
+      // Solo el personal lo completa; un Cliente usa el correo de su cuenta (lo toma el backend del JWT).
+      citizenEmail: ['', this.isStaff ? [Validators.required, Validators.email, Validators.maxLength(254)] : []]
     });
+  }
+
+  /** Operador y Admin ingresan la solicitud a nombre de un vecino, así que deben indicar su correo. */
+  get isStaff(): boolean {
+    return this.authService.hasAnyRole(['Operador', 'Admin']);
   }
 
   /** Tipo de trámite elegido en el formulario (para mostrar sus requisitos). */
@@ -73,7 +80,7 @@ export class Requests implements OnInit {
 
   openModal(): void {
     this.formError = null;
-    this.requestForm.reset({ procedureId: null, description: '', citizenRut: '' });
+    this.requestForm.reset({ procedureId: null, description: '', citizenRut: '', citizenEmail: '' });
     this.showModal = true;
     this.loadProcedures();
   }
@@ -138,7 +145,7 @@ export class Requests implements OnInit {
               status: item?.status ?? 'INGRESADO',
               createdAt: formattedDate,
               userId: item?.userId || item?.userEmail || item?.createdBy || null,
-              userEmail: item?.userEmail || item?.userId || 'Vecino Anónimo'
+              userEmail: item?.requesterEmail || item?.userEmail || item?.userId || 'Vecino Anónimo'
             };
           });
         },
@@ -165,7 +172,8 @@ export class Requests implements OnInit {
     const payload = {
       procedureId: this.requestForm.value.procedureId,
       description: this.requestForm.value.description,
-      ...(citizenRut ? { citizenRut } : {})
+      ...(citizenRut ? { citizenRut } : {}),
+      ...(this.isStaff ? { citizenEmail: String(this.requestForm.value.citizenEmail).trim() } : {})
     };
 
     this.http.post(this.apiUrl, payload)
@@ -178,7 +186,7 @@ export class Requests implements OnInit {
       .subscribe({
         next: () => {
           this.closeModal();
-          this.requestForm.reset({ procedureId: null, description: '', citizenRut: '' });
+          this.requestForm.reset({ procedureId: null, description: '', citizenRut: '', citizenEmail: '' });
           this.fetchRequests();
         },
         error: (err) => {
