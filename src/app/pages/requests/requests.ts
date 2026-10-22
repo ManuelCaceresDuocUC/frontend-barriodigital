@@ -104,6 +104,10 @@ export class Requests implements OnInit {
       });
   }
 
+  /**
+   * Carga las solicitudes. El backend decide qué ve cada rol (un Cliente recibe solo
+   * las suyas), así que aquí no se filtra nada: la autorización no vive en la pantalla.
+   */
   fetchRequests(): void {
     this.isLoading = true;
     this.pageError = null;
@@ -118,11 +122,8 @@ export class Requests implements OnInit {
       .subscribe({
         next: (data) => {
           const rawList = Array.isArray(data) ? data : [];
-          const currentUserId = this.authService.getUserOid();
-          const currentUserEmail = this.authService.getUserEmail();
 
-          // Map completo de datos de solicitudes
-          let parsedList: RequestModel[] = rawList.map(item => {
+          this.requestsList = rawList.map(item => {
             let formattedDate = 'Sin Fecha';
             if (item && item.createdAt) {
               formattedDate = String(item.createdAt).replace('T', ' ').split('.')[0];
@@ -138,17 +139,6 @@ export class Requests implements OnInit {
               userEmail: item?.userEmail || item?.userId || 'Vecino Anónimo'
             };
           });
-
-          // REGLA CLAVE: Si es sólo Cliente (Vecino), filtrar únicamente SUS solicitudes
-          if (this.authService.hasRole('Cliente') && !this.authService.hasAnyRole(['Operador', 'Admin', 'Auditor'])) {
-            parsedList = parsedList.filter(req =>
-              req.userId === currentUserId ||
-              req.userId === currentUserEmail ||
-              req.userEmail === currentUserEmail
-            );
-          }
-
-          this.requestsList = parsedList;
         },
         error: (err) => {
           console.error('Error al conectar con la API:', err);
@@ -167,11 +157,10 @@ export class Requests implements OnInit {
     this.isSaving = true;
     this.formError = null;
 
-    // La identidad (userId) sigue viniendo del cliente; pasará al JWT en un issue aparte.
+    // El dueño de la solicitud lo determina el backend a partir del JWT; no se envía userId.
     const payload = {
       procedureId: this.requestForm.value.procedureId,
-      description: this.requestForm.value.description,
-      userId: this.authService.getUserOid()
+      description: this.requestForm.value.description
     };
 
     this.http.post(this.apiUrl, payload)
@@ -219,7 +208,7 @@ export class Requests implements OnInit {
       });
   }
 
-  /** Mensaje del servidor si lo hay (409 sin cupo, 400 validación...), o uno genérico. */
+  /** Mensaje del servidor si lo hay (409 sin cupo o transición inválida, 400 validación...), o uno genérico. */
   private errorMessage(err: any, fallback: string): string {
     if (err?.status === 0) {
       return 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
