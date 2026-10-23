@@ -8,12 +8,48 @@
     </div>
 
     <div class="header-actions">
-      <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar trámite..." class="azure-input search-input">
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()" placeholder="Buscar trámite..." aria-label="Buscar trámite" class="azure-input search-input">
       <button *ngIf="isAdmin" (click)="openCreate()" class="btn-primary">+ Nuevo tipo</button>
     </div>
   </header>
 
   <div class="alert-error" *ngIf="pageError" role="alert">{{ pageError }}</div>
+
+  <!-- Filtros -->
+  <div class="filters-bar" *ngIf="procedures.length > 0">
+    <div class="filter-field">
+      <label for="filter-status">Estado</label>
+      <select id="filter-status" class="azure-input" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+        <option value="">Todos</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Inactivos</option>
+      </select>
+    </div>
+
+    <div class="filter-field">
+      <label for="filter-quota">Cupo de hoy</label>
+      <select id="filter-quota" class="azure-input" [(ngModel)]="quotaFilter" (ngModelChange)="onFilterChange()">
+        <option value="">Todos</option>
+        <option value="available">Con cupo disponible</option>
+        <option value="full">Cupo agotado</option>
+      </select>
+    </div>
+
+    <div class="filter-field filter-number">
+      <label for="filter-min">Cupo diario mín.</label>
+      <input id="filter-min" type="number" min="0" step="1" class="azure-input" [(ngModel)]="quotaMin" (ngModelChange)="onFilterChange()">
+    </div>
+
+    <div class="filter-field filter-number">
+      <label for="filter-max">Cupo diario máx.</label>
+      <input id="filter-max" type="number" min="0" step="1" class="azure-input" [(ngModel)]="quotaMax" (ngModelChange)="onFilterChange()">
+    </div>
+
+    <button type="button" class="btn-secondary btn-clear" [disabled]="!hasActiveFilters" (click)="clearFilters()">
+      Limpiar filtros
+    </button>
+  </div>
+  <p class="form-error filters-note" *ngIf="quotaRangeInvalid">El cupo mínimo no puede ser mayor que el máximo.</p>
 
   <div class="table-card">
     <div *ngIf="isLoading" class="loading-state">Cargando catálogo...</div>
@@ -30,7 +66,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let p of filteredProcedures; trackBy: trackById" [class.row-inactive]="!p.active">
+        <tr *ngFor="let p of pagedProcedures; trackBy: trackById" [class.row-inactive]="!p.active">
           <td><span class="category-pill">{{ p.name }}</span></td>
           <td class="req-cell">{{ p.requirements }}</td>
           <td>{{ p.dailyQuota }}</td>
@@ -64,11 +100,21 @@
 
         <tr *ngIf="filteredProcedures.length === 0">
           <td [attr.colspan]="isAdmin ? 6 : 5" class="empty-state">
-            {{ procedures.length === 0 ? 'Aún no hay tipos de trámite en el catálogo.' : 'Ningún trámite coincide con la búsqueda.' }}
+            {{ procedures.length === 0 ? 'Aún no hay tipos de trámite en el catálogo.' : 'Ningún trámite coincide con la búsqueda o los filtros.' }}
           </td>
         </tr>
       </tbody>
     </table>
+
+    <app-pagination
+      *ngIf="!isLoading && filteredProcedures.length > 0"
+      [total]="filteredProcedures.length"
+      [page]="page"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Modal crear / editar (solo Admin) -->

@@ -108,3 +108,22 @@
 
 .form-hint { margin: 6px 0 0; font-size: 13px; color: #605e5c; }
 .form-error { margin: 6px 0 0; font-size: 13px; color: #a4262c; }
+
+/* Filtros */
+.filters-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+}
+
+.filter-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 150px; }
+.filter-number { min-width: 130px; max-width: 150px; }
+.filter-field label { font-size: 0.75rem; font-weight: 600; color: #475569; text-transform: uppercase; }
+.btn-clear { margin-left: auto; }
+.filters-note { margin: -0.5rem 0 1rem; }

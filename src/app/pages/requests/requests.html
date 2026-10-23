@@ -8,17 +8,70 @@
         {{ authService.hasRole('Cliente') && !authService.hasAnyRole(['Operador', 'Admin']) ? 'Historial de tus trámites e incidencias ingresadas' : 'Listado general de requerimientos ciudadanos' }}
       </p>
     </div>
-    <!-- Visible para Clientes (Vecinos), Operadores y Admins -->
-    <button 
-      *ngIf="authService.hasAnyRole(['Cliente', 'Operador', 'Admin'])" 
-      (click)="openModal()" 
-      class="btn-primary">
-      + Nueva Solicitud
-    </button>
+    <div class="header-actions">
+      <input
+        type="text"
+        class="azure-input search-input"
+        placeholder="Buscar por N°, descripción o solicitante..."
+        aria-label="Buscar solicitudes"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onFilterChange()">
+
+      <!-- Visible para Clientes (Vecinos), Operadores y Admins -->
+      <button
+        *ngIf="authService.hasAnyRole(['Cliente', 'Operador', 'Admin'])"
+        (click)="openModal()"
+        class="btn-primary">
+        + Nueva Solicitud
+      </button>
+    </div>
   </header>
 
   <!-- Error de página (cargar solicitudes, cambiar estado: ej. 409 sin cupo) -->
   <div class="alert-error" *ngIf="pageError" role="alert">{{ pageError }}</div>
+
+  <!-- Filtros -->
+  <div class="filters-bar" *ngIf="requestsList.length > 0">
+    <div class="filter-field">
+      <label for="filter-status">Estado</label>
+      <select id="filter-status" class="azure-input" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+        <option value="">Todos</option>
+        <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+      </select>
+    </div>
+
+    <div class="filter-field">
+      <label for="filter-type">Tipo de trámite</label>
+      <select id="filter-type" class="azure-input" [(ngModel)]="typeFilter" (ngModelChange)="onFilterChange()">
+        <option value="">Todos</option>
+        <option *ngFor="let t of typeOptions" [value]="t">{{ t }}</option>
+      </select>
+    </div>
+
+    <!-- Solo el personal ve y filtra por solicitante -->
+    <div class="filter-field" *ngIf="canSeeRequester">
+      <label for="filter-requester">Solicitante</label>
+      <select id="filter-requester" class="azure-input" [(ngModel)]="requesterFilter" (ngModelChange)="onFilterChange()">
+        <option value="">Todos</option>
+        <option *ngFor="let u of requesterOptions" [value]="u">{{ u }}</option>
+      </select>
+    </div>
+
+    <div class="filter-field">
+      <label for="filter-from">Desde</label>
+      <input id="filter-from" type="date" class="azure-input" [(ngModel)]="dateFrom" (ngModelChange)="onFilterChange()" [attr.max]="dateTo || null">
+    </div>
+
+    <div class="filter-field">
+      <label for="filter-to">Hasta</label>
+      <input id="filter-to" type="date" class="azure-input" [(ngModel)]="dateTo" (ngModelChange)="onFilterChange()" [attr.min]="dateFrom || null">
+    </div>
+
+    <button type="button" class="btn-secondary btn-clear" [disabled]="!hasActiveFilters" (click)="clearFilters()">
+      Limpiar filtros
+    </button>
+  </div>
+  <p class="form-error filters-note" *ngIf="dateRangeInvalid">La fecha "Desde" no puede ser posterior a "Hasta".</p>
 
   <!-- Tabla de Solicitudes -->
   <div class="table-card">
@@ -41,7 +94,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let item of requestsList">
+        <tr *ngFor="let item of pagedRequests; trackBy: trackById">
           <td class="font-mono">#{{ item.id }}</td>
           <td>
             <span class="category-pill">{{ item.type || 'Sin Tipo' }}</span>
@@ -106,13 +159,23 @@
           </td>
         </tr>
         
-        <tr *ngIf="requestsList.length === 0">
-          <td [attr.colspan]="authService.hasAnyRole(['Operador', 'Admin', 'Auditor']) ? 7 : 5" class="empty-state">
-            No hay solicitudes registradas para mostrar.
+        <tr *ngIf="filteredRequests.length === 0">
+          <td [attr.colspan]="columnCount" class="empty-state">
+            {{ requestsList.length === 0 ? 'No hay solicitudes registradas para mostrar.' : 'Ninguna solicitud coincide con la búsqueda o los filtros.' }}
           </td>
         </tr>
       </tbody>
     </table>
+
+    <app-pagination
+      *ngIf="!isLoading && filteredRequests.length > 0"
+      [total]="filteredRequests.length"
+      [page]="page"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)">
+    </app-pagination>
   </div>
 
   <!-- Modal para Crear Solicitud -->
@@ -178,4 +241,4 @@
       </form>
     </div>
   </div>
-</div>
+</div>

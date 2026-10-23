@@ -1,0 +1,28 @@
+<div class="pagination">
+  <div class="page-size">
+    <span>Filas por página</span>
+    <select class="size-select" aria-label="Filas por página" (change)="onSizeChange($event)">
+      <option *ngFor="let option of pageSizeOptions" [value]="option" [selected]="option === pageSize">{{ option }}</option>
+    </select>
+  </div>
+
+  <span class="range" aria-live="polite">{{ from }}–{{ to }} de {{ total }}</span>
+
+  <nav class="pager" aria-label="Paginación">
+    <button type="button" class="pager-btn" aria-label="Primera página" [disabled]="page <= 1" (click)="go(1)">«</button>
+    <button type="button" class="pager-btn" aria-label="Página anterior" [disabled]="page <= 1" (click)="go(page - 1)">‹</button>
+
+    <button
+      type="button"
+      class="pager-btn"
+      *ngFor="let p of pages"
+      [class.active]="p === page"
+      [attr.aria-current]="p === page ? 'page' : null"
+      (click)="go(p)">
+      {{ p }}
+    </button>
+
+    <button type="button" class="pager-btn" aria-label="Página siguiente" [disabled]="page >= totalPages" (click)="go(page + 1)">›</button>
+    <button type="button" class="pager-btn" aria-label="Última página" [disabled]="page >= totalPages" (click)="go(totalPages)">»</button>
+  </nav>
+</div>

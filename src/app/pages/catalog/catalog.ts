@@ -6,6 +6,8 @@ import { catchError, finalize, map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { CatalogService, ProcedureType } from '../../services/catalog.service';
 import { httpErrorMessage } from '../../utils/http-error';
+import { isNumber, normalizeText } from '../../utils/text';
+import { Pagination } from '../../shared/pagination/pagination';
 
 /** Tipo de trámite con el cupo usado hoy (null si no se pudo consultar). */
 interface ProcedureRow extends ProcedureType {
@@ -15,7 +17,7 @@ interface ProcedureRow extends ProcedureType {
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, Pagination],
   templateUrl: './catalog.html',
   styleUrls: ['./catalog.scss']
 })
@@ -23,8 +25,20 @@ export class Catalog implements OnInit {
   readonly nameMax = 100;
   readonly requirementsMax = 1000;
 
+  readonly pageSizeOptions = [5, 10, 20, 50];
+
   procedures: ProcedureRow[] = [];
+
+  // Búsqueda, filtros y paginación (todo en el cliente: el backend entrega la lista completa)
   searchTerm = '';
+  statusFilter: '' | 'active' | 'inactive' = '';
+  quotaFilter: '' | 'available' | 'full' = '';
+  quotaMin: number | null = null;
+  quotaMax: number | null = null;
+  page = 1;
+  pageSize = 10;
+  filteredProcedures: ProcedureRow[] = [];
+  pagedProcedures: ProcedureRow[] = [];
   isLoading = false;
 
   // Modal de crear / editar
@@ -60,12 +74,77 @@ export class Catalog implements OnInit {
     return this.authService.hasRole('Admin');
   }
 
-  get filteredProcedures(): ProcedureRow[] {
-    const term = this.searchTerm.trim().toLowerCase();
-    if (!term) return this.procedures;
-    return this.procedures.filter(p =>
-      p.name.toLowerCase().includes(term) || p.requirements.toLowerCase().includes(term)
-    );
+  get hasActiveFilters(): boolean {
+    return !!(this.searchTerm.trim() || this.statusFilter || this.quotaFilter
+      || isNumber(this.quotaMin) || isNumber(this.quotaMax));
+  }
+
+  /** Mínimo mayor que máximo: ningún trámite puede cumplirlo. */
+  get quotaRangeInvalid(): boolean {
+    return isNumber(this.quotaMin) && isNumber(this.quotaMax) && this.quotaMin > this.quotaMax;
+  }
+
+  /** Aplica búsqueda y filtros sobre la lista completa y recalcula la página visible. */
+  applyFilters(): void {
+    const term = normalizeText(this.searchTerm);
+
+    this.filteredProcedures = this.procedures.filter(p => {
+      if (term && !(normalizeText(p.name).includes(term) || normalizeText(p.requirements).includes(term))) {
+        return false;
+      }
+      if (this.statusFilter === 'active' && !p.active) return false;
+      if (this.statusFilter === 'inactive' && p.active) return false;
+
+      // Con cupo / agotado se calcula con el usado hoy; si no se pudo consultar (null), no se puede afirmar ninguno
+      if (this.quotaFilter) {
+        if (p.usedToday === null) return false;
+        const full = p.usedToday >= p.dailyQuota;
+        if (this.quotaFilter === 'full' && !full) return false;
+        if (this.quotaFilter === 'available' && full) return false;
+      }
+
+      if (isNumber(this.quotaMin) && p.dailyQuota < this.quotaMin) return false;
+      if (isNumber(this.quotaMax) && p.dailyQuota > this.quotaMax) return false;
+      return true;
+    });
+
+    this.updatePage();
+  }
+
+  /** Recorta la lista filtrada a la página actual (y corrige la página si quedó fuera de rango). */
+  private updatePage(): void {
+    const totalPages = Math.max(1, Math.ceil(this.filteredProcedures.length / this.pageSize));
+    if (this.page > totalPages) {
+      this.page = totalPages;
+    }
+    const start = (this.page - 1) * this.pageSize;
+    this.pagedProcedures = this.filteredProcedures.slice(start, start + this.pageSize);
+  }
+
+  /** Cambió la búsqueda o algún filtro: se vuelve a la primera página. */
+  onFilterChange(): void {
+    this.page = 1;
+    this.applyFilters();
+  }
+
+  onPageChange(page: number): void {
+    this.page = page;
+    this.updatePage();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.page = 1;
+    this.updatePage();
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.statusFilter = '';
+    this.quotaFilter = '';
+    this.quotaMin = null;
+    this.quotaMax = null;
+    this.onFilterChange();
   }
 
   initForm(): void {
@@ -99,10 +178,14 @@ export class Catalog implements OnInit {
         })
       )
       .subscribe({
-        next: rows => (this.procedures = rows),
+        next: rows => {
+          this.procedures = rows;
+          this.applyFilters();
+        },
         error: err => {
           console.error('Error al cargar el catálogo:', err);
           this.procedures = [];
+          this.applyFilters();
           this.pageError = httpErrorMessage(err, 'No se pudo cargar el catálogo.');
         }
       });
