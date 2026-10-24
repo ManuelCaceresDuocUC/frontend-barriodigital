@@ -11,6 +11,17 @@
 npm-debug.log
 yarn-error.log
 
+# Angular (caché y artefactos locales)
+/.angular
+
+# Logs
+*.log
+
+# Variables de entorno locales
+.env
+.env.*
+!.env.example
+
 # IDEs and editors
 .idea/
 .project
@@ -20,17 +31,15 @@ yarn-error.log
 .settings/
 *.sublime-workspace
 
-# Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/mcp.json
+# Visual Studio Code (configuración local, no se versiona)
+.vscode/
 .history/*
 
+# Herramientas locales
+.claude/
+modernize/
+
 # Miscellaneous
-/.angular/cache
 .sass-cache/
 /connect.lock
 /coverage
