@@ -1,0 +1,21 @@
+# SITE_ADDRESS llega por variable de entorno (compose), p. ej. barriodigital-manu.duckdns.org.
+# Al ser un dominio, Caddy obtiene y renueva solo el certificado y redirige HTTP -> HTTPS.
+{$SITE_ADDRESS} {
+	root * /srv
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Los archivos con hash (main-XXXX.js) se pueden cachear; index.html no.
+	@hashed path_regexp \.[A-Za-z0-9]{8,}\.(js|css)$
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	header /index.html Cache-Control "no-cache"
+
+	# SPA: cualquier ruta que no sea un archivo (/requests, /catalog...) devuelve index.html
+	try_files {path} /index.html
+	file_server
+}
