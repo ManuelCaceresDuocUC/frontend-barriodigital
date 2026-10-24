@@ -75,7 +75,7 @@ export class AuthService {
   // MÉTODO PARA CERRAR SESIÓN CON MSAL
   logout(): void {
     this.msalService.logoutRedirect({
-      postLogoutRedirectUri: 'http://localhost:4200/login'
+      postLogoutRedirectUri: `${window.location.origin}/login`
     });
   }
 }

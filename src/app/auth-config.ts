@@ -6,8 +6,8 @@ export const msalConfig = {
     clientId: '2fc5d9c1-8b42-4674-b0dc-23990c22f370',
     // 1. Agregamos /v2.0 para forzar el emisor v2 que exige AWS API Gateway
     authority: 'https://login.microsoftonline.com/ffcb40ec-aa43-4c4e-acd8-4d27467872c5/v2.0',
-    redirectUri: 'http://localhost:4200/dashboard',
-    postLogoutRedirectUri: 'http://localhost:4200/login'
+    redirectUri: `${window.location.origin}/dashboard`,
+    postLogoutRedirectUri: `${window.location.origin}/login`
   },
   cache: {
     cacheLocation: 'localStorage',
