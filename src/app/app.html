@@ -27,6 +27,10 @@
         <span class="nav-icon">📈</span>
         <span>Reportería / KPIs</span>
       </a>
+      <a *ngIf="authService.hasRole('Admin')" routerLink="/rabbit" routerLinkActive="active" class="nav-item">
+        <span class="nav-icon">📨</span>
+        <span>Mensajería</span>
+      </a>
       <a *ngIf="authService.hasAnyRole(['Auditor', 'Admin'])" routerLink="/audit" routerLinkActive="active" class="nav-item">
         <span class="nav-icon">🔍</span>
         <span>Auditoría</span>

@@ -1,0 +1,103 @@
+<div class="rabbit-page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Mensajería (RabbitMQ)</h1>
+      <p class="page-subtitle">
+        Estado de las colas en vivo
+        <span *ngIf="lastUpdate"> · Última actualización: {{ lastUpdate | date:'HH:mm:ss' }}</span>
+        <span *ngIf="paused" class="paused-tag">En pausa</span>
+      </p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-secondary" (click)="refreshNow()">Actualizar ahora</button>
+      <button type="button" class="btn-primary" (click)="togglePause()">
+        {{ paused ? 'Reanudar' : 'Pausar' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="alert-error" *ngIf="pageError" role="alert">{{ pageError }}</div>
+
+  <div class="banner banner-ok" *ngIf="!isLoading && !pageError && failedTotal === 0" role="status">
+    Sin mensajes fallidos: todas las DLQ están vacías.
+  </div>
+  <div class="banner banner-fail" *ngIf="failedTotal > 0" role="alert">
+    {{ failedTotal }} mensaje(s) fallido(s) en las DLQ. Haz clic en una cola roja para ver el detalle.
+  </div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">Obteniendo estado de las colas...</div>
+
+    <table *ngIf="!isLoading" class="azure-table">
+      <thead>
+        <tr>
+          <th>Cola</th>
+          <th>Mensajes</th>
+          <th>Consumidores</th>
+          <th>Estado</th>
+          <th>Protegida</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let q of queues; trackBy: trackByName"
+            [class.dlq-row]="isDlq(q)"
+            [class.dlq-alert]="isDlq(q) && q.messages > 0"
+            [class.clickable]="isDlq(q)"
+            (click)="isDlq(q) && openDlq(q)">
+          <td class="font-mono">
+            {{ q.name }}
+            <span class="category-pill" *ngIf="isDlq(q)">DLQ</span>
+          </td>
+          <td><strong>{{ q.messages }}</strong></td>
+          <td>{{ q.consumers }}</td>
+          <td><span class="state-badge">{{ q.state || 'desconocido' }}</span></td>
+          <td>{{ q.protectedResource ? 'Sí' : 'No' }}</td>
+        </tr>
+        <tr *ngIf="queues.length === 0">
+          <td colspan="5" class="empty-state">No hay colas para mostrar.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Detalle de una DLQ -->
+  <div class="modal-backdrop" *ngIf="selectedQueue" (click)="closeDlq()">
+    <div class="modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3>{{ selectedQueue }}</h3>
+        <button type="button" class="close-btn" aria-label="Cerrar" (click)="closeDlq()">×</button>
+      </div>
+      <p class="form-hint">
+        Lectura sin consumir (hasta 20 mensajes). El correo y el RUT se muestran enmascarados.
+      </p>
+
+      <div class="alert-error" *ngIf="messagesError" role="alert">{{ messagesError }}</div>
+      <div class="loading-state" *ngIf="messagesLoading">Leyendo mensajes...</div>
+      <div class="empty-state" *ngIf="!messagesLoading && !messagesError && messages.length === 0">
+        La cola no tiene mensajes.
+      </div>
+
+      <div class="msg" *ngFor="let m of messages">
+        <div class="msg-meta">
+          <span><strong>Exchange:</strong> {{ m.exchange || '(default)' }}</span>
+          <span><strong>Routing key:</strong> {{ m.routingKey }}</span>
+          <span *ngIf="m.redelivered" class="status-badge">Reentregado</span>
+        </div>
+        <div class="msg-meta" *ngIf="m.death as d">
+          <span><strong>Origen:</strong> {{ d.queue }}</span>
+          <span><strong>Motivo:</strong> {{ d.reason }}</span>
+          <span><strong>Veces:</strong> {{ d.count }}</span>
+          <span *ngIf="d.time"><strong>Fecha:</strong> {{ d.time | date:'dd-MM-yyyy HH:mm:ss' }}</span>
+        </div>
+        <pre class="msg-body" *ngIf="!m.binary">{{ m.payload }}</pre>
+        <p class="form-hint" *ngIf="m.binary">Contenido binario ({{ m.payloadBytes }} bytes): no se muestra.</p>
+        <p class="form-hint" *ngIf="m.payloadTruncated">El cuerpo se muestra truncado ({{ m.payloadBytes }} bytes en total).</p>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="loadMessages()" [disabled]="messagesLoading">Recargar</button>
+        <button type="button" class="btn-primary" (click)="closeDlq()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
