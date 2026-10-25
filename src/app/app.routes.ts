@@ -8,6 +8,7 @@ import { Requests } from './pages/requests/requests';
 import { Catalog } from './pages/catalog/catalog';
 import { Audit } from './pages/audit/audit';
 import { Reports } from './pages/reports/reports';
+import { Rabbit } from './pages/rabbit/rabbit';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -38,6 +39,13 @@ export const routes: Routes = [
   { 
     path: 'reports', 
     component: Reports, 
+    canActivate: [MsalGuard, roleGuard(['Admin'])] 
+  },
+  
+  // Mensajería (RabbitMQ): Exclusivo Admin
+  { 
+    path: 'rabbit', 
+    component: Rabbit, 
     canActivate: [MsalGuard, roleGuard(['Admin'])] 
   },
   
