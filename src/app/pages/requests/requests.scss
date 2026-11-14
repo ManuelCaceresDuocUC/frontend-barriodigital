@@ -133,3 +133,61 @@
 .filter-field label { font-size: 0.75rem; font-weight: 600; color: #475569; text-transform: uppercase; }
 .btn-clear { margin-left: auto; }
 .filters-note { margin: -0.5rem 0 1rem; }
+
+// Enlace discreto para abrir el historial junto al estado
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.5rem;
+  color: #0078D4;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover { color: #005A9E; }
+}
+
+.btn-primary.btn-danger {
+  background: #D13438;
+
+  &:hover:not(:disabled) { background: #A4262C; }
+}
+
+// Línea de tiempo del historial de estados
+.history-card { max-width: 600px; max-height: 85vh; overflow-y: auto; }
+
+.timeline {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0 0 0 1.25rem;
+  border-left: 2px solid #E1DFDD;
+}
+
+.timeline-item {
+  position: relative;
+  padding: 0 0 1.25rem 0.75rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -1.65rem;
+    top: 0.35rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #0078D4;
+  }
+}
+
+.timeline-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.timeline-from { font-size: 0.8rem; color: #64748B; }
+.timeline-meta { margin-top: 0.25rem; font-size: 0.8rem; color: #64748B; }
+.timeline-reason {
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: #FAF9F8;
+  border-left: 3px solid #D13438;
+  font-size: 0.9rem;
+  word-break: break-word;
+}

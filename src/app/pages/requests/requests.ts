@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../services/auth.service';
 import { CatalogService, ProcedureType } from '../../services/catalog.service';
@@ -20,6 +21,18 @@ export interface RequestModel {
   userEmail?: string | null;
 }
 
+/** Un cambio de estado de una solicitud, tal como lo devuelve GET /api/requests/{id}/history. */
+export interface StatusChange {
+  fromStatus: string | null;
+  toStatus: string;
+  changedAt: string;
+  /** Solo el personal recibe nombre y correo; el vecino recibe únicamente el rol. */
+  changedByName: string | null;
+  changedByEmail: string | null;
+  changedByRole: string | null;
+  reason: string | null;
+}
+
 @Component({
   selector: 'app-requests',
   standalone: true,
@@ -31,6 +44,8 @@ export class Requests implements OnInit {
   /** Estados posibles de una solicitud (valores del enum del backend). */
   readonly statusOptions = ['INGRESADO', 'ADMITIDO', 'EN_GESTION', 'EN_TERRENO', 'RESUELTO', 'RECHAZADO'];
   readonly pageSizeOptions = [5, 10, 20, 50];
+  /** Largo máximo del motivo de rechazo (el backend rechaza más de 500 con 400). */
+  readonly reasonMaxLength = 500;
 
   requestsList: RequestModel[] = [];
 
@@ -60,6 +75,17 @@ export class Requests implements OnInit {
   // Estado de las peticiones en curso y errores visibles
   isSaving = false;
   isUpdating = false;
+
+  // Rechazo: la ventana pide el motivo antes de enviar el cambio de estado
+  rejectTarget: RequestModel | null = null;
+  rejectReason = '';
+  rejectError: string | null = null;
+
+  // Historial de cambios de estado de una solicitud
+  historyTarget: RequestModel | null = null;
+  historyItems: StatusChange[] = [];
+  historyLoading = false;
+  historyError: string | null = null;
   formError: string | null = null;
   pageError: string | null = null;
 
@@ -322,26 +348,112 @@ export class Requests implements OnInit {
   updateStatus(id?: number, newStatus?: string): void {
     if (!id || !newStatus || this.isUpdating) return;
 
-    this.isUpdating = true;
     this.pageError = null;
-    const body = { status: newStatus };
+    this.putStatus(id, { status: newStatus }).subscribe({
+      next: () => {
+        this.fetchRequests();
+      },
+      error: (err) => {
+        console.error('Error al actualizar estado:', err);
+        this.pageError = this.errorMessage(err, 'Error al actualizar el estado de la solicitud.');
+      }
+    });
+  }
 
-    this.http.put(`${this.apiUrl}/${id}/status`, body)
+  /** Envía el cambio de estado y mantiene el indicador de petición en curso. */
+  private putStatus(id: number, body: { status: string; reason?: string }): Observable<unknown> {
+    this.isUpdating = true;
+    return this.http.put(`${this.apiUrl}/${id}/status`, body).pipe(
+      finalize(() => {
+        this.isUpdating = false;
+        this.cdr.detectChanges();
+      })
+    );
+  }
+
+  /** Se puede rechazar mientras la solicitud no esté en terreno ni en un estado final. */
+  canReject(item: RequestModel): boolean {
+    return item.status === 'INGRESADO' || item.status === 'ADMITIDO' || item.status === 'EN_GESTION';
+  }
+
+  openReject(item: RequestModel): void {
+    this.rejectTarget = item;
+    this.rejectReason = '';
+    this.rejectError = null;
+  }
+
+  closeReject(): void {
+    this.rejectTarget = null;
+    this.rejectReason = '';
+    this.rejectError = null;
+  }
+
+  /** El motivo es obligatorio: sin él el botón queda deshabilitado y el backend también lo exige (400). */
+  get rejectReasonValid(): boolean {
+    const reason = this.rejectReason.trim();
+    return reason.length > 0 && reason.length <= this.reasonMaxLength;
+  }
+
+  confirmReject(): void {
+    const target = this.rejectTarget;
+    if (!target?.id || !this.rejectReasonValid || this.isUpdating) return;
+
+    this.rejectError = null;
+    this.putStatus(target.id, { status: 'RECHAZADO', reason: this.rejectReason.trim() }).subscribe({
+      next: () => {
+        this.closeReject();
+        this.fetchRequests();
+      },
+      error: (err) => {
+        console.error('Error al rechazar:', err);
+        this.rejectError = this.errorMessage(err, 'No se pudo rechazar la solicitud.');
+      }
+    });
+  }
+
+  openHistory(item: RequestModel): void {
+    if (!item.id) return;
+    this.historyTarget = item;
+    this.historyItems = [];
+    this.historyError = null;
+    this.historyLoading = true;
+
+    this.http.get<StatusChange[]>(`${this.apiUrl}/${item.id}/history`)
       .pipe(
         finalize(() => {
-          this.isUpdating = false;
+          this.historyLoading = false;
           this.cdr.detectChanges();
         })
       )
       .subscribe({
-        next: () => {
-          this.fetchRequests();
+        next: (data) => {
+          this.historyItems = (Array.isArray(data) ? data : []).map(change => ({
+            ...change,
+            changedAt: change.changedAt ? String(change.changedAt).replace('T', ' ').split('.')[0] : ''
+          }));
         },
         error: (err) => {
-          console.error('Error al actualizar estado:', err);
-          this.pageError = this.errorMessage(err, 'Error al actualizar el estado de la solicitud.');
+          console.error('Error al cargar el historial:', err);
+          this.historyError = this.errorMessage(err, 'No se pudo cargar el historial.');
         }
       });
+  }
+
+  closeHistory(): void {
+    this.historyTarget = null;
+    this.historyItems = [];
+    this.historyError = null;
+  }
+
+  /** "EN_GESTION" -> "EN GESTION" (el nombre técnico no lleva tilde; esto es solo para mostrar). */
+  statusLabel(status: string | null): string {
+    return status ? status.replace(/_/g, ' ') : 'Ingreso';
+  }
+
+  /** Quién hizo el cambio: el personal ve nombre y correo; el vecino, solo el rol. */
+  changedByLabel(change: StatusChange): string {
+    const who = change.changedByName || change.changedByEmail;
+    return who ? `${who} (${change.changedByRole ?? 'Sin rol'})` : (change.changedByRole ?? 'Sin dato');
   }
 
   /** Mensaje del servidor si lo hay (409 sin cupo o transición inválida, 400 validación...), o uno genérico. */

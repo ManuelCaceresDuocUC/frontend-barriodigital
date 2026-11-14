@@ -111,6 +111,7 @@
             <span class="status-badge" [ngClass]="item.status?.toLowerCase() || 'ingresado'">
               {{ item.status }}
             </span>
+            <button type="button" class="btn-link" (click)="openHistory(item)">Historial</button>
           </td>
 
           <!-- Botones de transición -->
@@ -149,8 +150,8 @@
               </button>
 
               <button 
-                *ngIf="item.status === 'INGRESADO' || item.status === 'ADMITIDO'" 
-                (click)="updateStatus(item.id, 'RECHAZADO')" 
+                *ngIf="canReject(item)" 
+                (click)="openReject(item)" 
                 [disabled]="isUpdating"
                 class="btn-action btn-reject">
                 Rechazar
@@ -241,4 +242,67 @@
       </form>
     </div>
   </div>
-</div>
+
+  <!-- Modal: motivo de rechazo (obligatorio) -->
+  <div class="modal-backdrop" *ngIf="rejectTarget as target">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reject-title">
+      <div class="modal-header">
+        <h3 id="reject-title">Rechazar solicitud #{{ target.id }}</h3>
+        <button class="close-btn" (click)="closeReject()" aria-label="Cerrar">×</button>
+      </div>
+
+      <div class="form-group">
+        <label for="reject-reason">Motivo del rechazo *</label>
+        <textarea
+          id="reject-reason"
+          rows="4"
+          class="azure-input"
+          [(ngModel)]="rejectReason"
+          [attr.maxlength]="reasonMaxLength"
+          placeholder="Explica por qué se rechaza. El vecino lo recibirá por correo."></textarea>
+        <p class="form-hint">{{ rejectReason.length }} / {{ reasonMaxLength }}. El motivo queda en el historial y se envía al vecino.</p>
+      </div>
+
+      <div class="alert-error" *ngIf="rejectError" role="alert">{{ rejectError }}</div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeReject()">Cancelar</button>
+        <button type="button" class="btn-primary btn-danger" [disabled]="!rejectReasonValid || isUpdating" (click)="confirmReject()">
+          {{ isUpdating ? 'Rechazando...' : 'Rechazar solicitud' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: historial de cambios de estado -->
+  <div class="modal-backdrop" *ngIf="historyTarget as target">
+    <div class="modal-card history-card" role="dialog" aria-modal="true" aria-labelledby="history-title">
+      <div class="modal-header">
+        <h3 id="history-title">Historial de la solicitud #{{ target.id }}</h3>
+        <button class="close-btn" (click)="closeHistory()" aria-label="Cerrar">×</button>
+      </div>
+
+      <p class="loading-state" *ngIf="historyLoading">Cargando historial...</p>
+      <div class="alert-error" *ngIf="historyError" role="alert">{{ historyError }}</div>
+
+      <p class="empty-state" *ngIf="!historyLoading && !historyError && historyItems.length === 0">
+        Esta solicitud no tiene cambios registrados (es anterior al registro de historial).
+      </p>
+
+      <ol class="timeline" *ngIf="historyItems.length > 0">
+        <li *ngFor="let change of historyItems" class="timeline-item">
+          <div class="timeline-head">
+            <span class="status-badge" [ngClass]="change.toStatus.toLowerCase()">{{ statusLabel(change.toStatus) }}</span>
+            <span class="timeline-from" *ngIf="change.fromStatus">desde {{ statusLabel(change.fromStatus) }}</span>
+          </div>
+          <div class="timeline-meta">{{ change.changedAt }} · {{ changedByLabel(change) }}</div>
+          <div class="timeline-reason" *ngIf="change.reason"><strong>Motivo:</strong> {{ change.reason }}</div>
+        </li>
+      </ol>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeHistory()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
