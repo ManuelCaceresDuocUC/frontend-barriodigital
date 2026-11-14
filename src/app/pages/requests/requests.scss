@@ -191,3 +191,20 @@
   font-size: 0.9rem;
   word-break: break-word;
 }
+
+.btn-cancel {
+  background: #FFF4CE;
+  color: #8A6D00;
+  border: 1px solid #F2D675;
+
+  &:hover:not(:disabled) { background: #FCE8A4; }
+}
+
+.timeline-crew {
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: #F3F9FD;
+  border-left: 3px solid #0078D4;
+  font-size: 0.9rem;
+  word-break: break-word;
+}

@@ -31,6 +31,21 @@ export interface StatusChange {
   changedByEmail: string | null;
   changedByRole: string | null;
   reason: string | null;
+  /** Cuadrilla asignada (solo en el cambio a EN_TERRENO y solo visible para el personal). */
+  crewName?: string | null;
+  crewMembers?: string | null;
+  crewVehiclePlate?: string | null;
+  crewVehicleType?: string | null;
+  crewPhone?: string | null;
+}
+
+/** Datos de la cuadrilla que se envían al pasar a EN_TERRENO. */
+export interface CrewForm {
+  name: string;
+  members: string;
+  vehiclePlate: string;
+  vehicleType: string;
+  contactPhone: string;
 }
 
 @Component({
@@ -80,6 +95,16 @@ export class Requests implements OnInit {
   rejectTarget: RequestModel | null = null;
   rejectReason = '';
   rejectError: string | null = null;
+
+  // Cancelación en terreno: la solicitud vuelve a EN_GESTION con el motivo que informó la cuadrilla
+  cancelTarget: RequestModel | null = null;
+  cancelReason = '';
+  cancelError: string | null = null;
+
+  // Asignación de cuadrilla al pasar a EN_TERRENO
+  crewTarget: RequestModel | null = null;
+  crew: CrewForm = this.emptyCrew();
+  crewError: string | null = null;
 
   // Historial de cambios de estado de una solicitud
   historyTarget: RequestModel | null = null;
@@ -361,7 +386,10 @@ export class Requests implements OnInit {
   }
 
   /** Envía el cambio de estado y mantiene el indicador de petición en curso. */
-  private putStatus(id: number, body: { status: string; reason?: string }): Observable<unknown> {
+  private putStatus(
+    id: number,
+    body: { status: string; reason?: string; crew?: Record<string, string> }
+  ): Observable<unknown> {
     this.isUpdating = true;
     return this.http.put(`${this.apiUrl}/${id}/status`, body).pipe(
       finalize(() => {
@@ -409,6 +437,95 @@ export class Requests implements OnInit {
         this.rejectError = this.errorMessage(err, 'No se pudo rechazar la solicitud.');
       }
     });
+  }
+
+  openCancel(item: RequestModel): void {
+    this.cancelTarget = item;
+    this.cancelReason = '';
+    this.cancelError = null;
+  }
+
+  closeCancel(): void {
+    this.cancelTarget = null;
+    this.cancelReason = '';
+    this.cancelError = null;
+  }
+
+  get cancelReasonValid(): boolean {
+    const reason = this.cancelReason.trim();
+    return reason.length > 0 && reason.length <= this.reasonMaxLength;
+  }
+
+  /** La cuadrilla no pudo cumplir la tarea: vuelve a gestión (EN_TERRENO a EN_GESTION) con el motivo. */
+  confirmCancel(): void {
+    const target = this.cancelTarget;
+    if (!target?.id || !this.cancelReasonValid || this.isUpdating) return;
+
+    this.cancelError = null;
+    this.putStatus(target.id, { status: 'EN_GESTION', reason: this.cancelReason.trim() }).subscribe({
+      next: () => {
+        this.closeCancel();
+        this.fetchRequests();
+      },
+      error: (err) => {
+        console.error('Error al cancelar en terreno:', err);
+        this.cancelError = this.errorMessage(err, 'No se pudo cancelar la tarea en terreno.');
+      }
+    });
+  }
+
+  private emptyCrew(): CrewForm {
+    return { name: '', members: '', vehiclePlate: '', vehicleType: '', contactPhone: '' };
+  }
+
+  openCrew(item: RequestModel): void {
+    this.crewTarget = item;
+    this.crew = this.emptyCrew();
+    this.crewError = null;
+  }
+
+  closeCrew(): void {
+    this.crewTarget = null;
+    this.crew = this.emptyCrew();
+    this.crewError = null;
+  }
+
+  /** Nombre, integrantes y patente son obligatorios (el backend también los exige con 400). */
+  get crewValid(): boolean {
+    return this.crew.name.trim().length > 0
+      && this.crew.members.trim().length > 0
+      && this.crew.vehiclePlate.trim().length > 0;
+  }
+
+  confirmCrew(): void {
+    const target = this.crewTarget;
+    if (!target?.id || !this.crewValid || this.isUpdating) return;
+
+    this.crewError = null;
+    const crew = {
+      name: this.crew.name.trim(),
+      members: this.crew.members.trim(),
+      vehiclePlate: this.crew.vehiclePlate.trim(),
+      vehicleType: this.crew.vehicleType.trim(),
+      contactPhone: this.crew.contactPhone.trim()
+    };
+    this.putStatus(target.id, { status: 'EN_TERRENO', crew }).subscribe({
+      next: () => {
+        this.closeCrew();
+        this.fetchRequests();
+      },
+      error: (err) => {
+        console.error('Error al asignar cuadrilla:', err);
+        this.crewError = this.errorMessage(err, 'No se pudo pasar la solicitud a terreno.');
+      }
+    });
+  }
+
+  /** Línea con los datos de la cuadrilla de un cambio del historial; vacía si no hay (vecino u otros cambios). */
+  crewSummary(change: StatusChange): string {
+    if (!change.crewName) return '';
+    const parts = [change.crewName, change.crewMembers, change.crewVehiclePlate, change.crewVehicleType, change.crewPhone];
+    return parts.filter(part => !!part).join(' · ');
   }
 
   openHistory(item: RequestModel): void {

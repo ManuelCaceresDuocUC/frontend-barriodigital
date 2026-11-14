@@ -135,7 +135,7 @@
 
               <button 
                 *ngIf="item.status === 'EN_GESTION'" 
-                (click)="updateStatus(item.id, 'EN_TERRENO')" 
+                (click)="openCrew(item)" 
                 [disabled]="isUpdating"
                 class="btn-action btn-terrain">
                 Pasar a Terreno
@@ -147,6 +147,14 @@
                 [disabled]="isUpdating"
                 class="btn-action btn-resolve">
                 Resolver
+              </button>
+
+              <button 
+                *ngIf="item.status === 'EN_TERRENO'" 
+                (click)="openCancel(item)" 
+                [disabled]="isUpdating"
+                class="btn-action btn-cancel">
+                Cancelar en terreno
               </button>
 
               <button 
@@ -274,6 +282,80 @@
     </div>
   </div>
 
+  <!-- Modal: datos de la cuadrilla al pasar a terreno -->
+  <div class="modal-backdrop" *ngIf="crewTarget as target">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="crew-title">
+      <div class="modal-header">
+        <h3 id="crew-title">Asignar cuadrilla a la solicitud #{{ target.id }}</h3>
+        <button class="close-btn" (click)="closeCrew()" aria-label="Cerrar">×</button>
+      </div>
+
+      <div class="form-group">
+        <label for="crew-name">Nombre de la cuadrilla *</label>
+        <input id="crew-name" type="text" class="azure-input" maxlength="100" [(ngModel)]="crew.name" />
+      </div>
+      <div class="form-group">
+        <label for="crew-members">Integrantes *</label>
+        <textarea id="crew-members" rows="2" class="azure-input" maxlength="300" [(ngModel)]="crew.members"
+          placeholder="Nombres de quienes salen a terreno"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="crew-plate">Patente del vehículo *</label>
+        <input id="crew-plate" type="text" class="azure-input" maxlength="20" [(ngModel)]="crew.vehiclePlate" />
+      </div>
+      <div class="form-group">
+        <label for="crew-vehicle">Tipo de vehículo</label>
+        <input id="crew-vehicle" type="text" class="azure-input" maxlength="60" [(ngModel)]="crew.vehicleType"
+          placeholder="Camioneta, camión, etc." />
+      </div>
+      <div class="form-group">
+        <label for="crew-phone">Teléfono de contacto</label>
+        <input id="crew-phone" type="text" class="azure-input" maxlength="30" [(ngModel)]="crew.contactPhone" />
+      </div>
+      <p class="form-hint">Los datos quedan en el historial para saber quiénes fueron y con qué vehículo.</p>
+
+      <div class="alert-error" *ngIf="crewError" role="alert">{{ crewError }}</div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeCrew()">Cancelar</button>
+        <button type="button" class="btn-primary" [disabled]="!crewValid || isUpdating" (click)="confirmCrew()">
+          {{ isUpdating ? 'Enviando...' : 'Pasar a terreno' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: cancelación en terreno (vuelve a gestión) -->
+  <div class="modal-backdrop" *ngIf="cancelTarget as target">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cancel-title">
+      <div class="modal-header">
+        <h3 id="cancel-title">Cancelar en terreno la solicitud #{{ target.id }}</h3>
+        <button class="close-btn" (click)="closeCancel()" aria-label="Cerrar">×</button>
+      </div>
+
+      <div class="form-group">
+        <label for="cancel-reason">Motivo informado por la cuadrilla *</label>
+        <textarea
+          id="cancel-reason"
+          rows="4"
+          class="azure-input"
+          [(ngModel)]="cancelReason"
+          [attr.maxlength]="reasonMaxLength"
+          placeholder="Por qué la cuadrilla no pudo llevar a cabo la tarea."></textarea>
+        <p class="form-hint">{{ cancelReason.length }} / {{ reasonMaxLength }}. La solicitud vuelve a gestión para reasignarla o rechazarla. El vecino no recibe este motivo.</p>
+      </div>
+
+      <div class="alert-error" *ngIf="cancelError" role="alert">{{ cancelError }}</div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="closeCancel()">Volver</button>
+        <button type="button" class="btn-primary btn-danger" [disabled]="!cancelReasonValid || isUpdating" (click)="confirmCancel()">
+          {{ isUpdating ? 'Cancelando...' : 'Cancelar en terreno' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: historial de cambios de estado -->
   <div class="modal-backdrop" *ngIf="historyTarget as target">
     <div class="modal-card history-card" role="dialog" aria-modal="true" aria-labelledby="history-title">
@@ -296,6 +378,7 @@
             <span class="timeline-from" *ngIf="change.fromStatus">desde {{ statusLabel(change.fromStatus) }}</span>
           </div>
           <div class="timeline-meta">{{ change.changedAt }} · {{ changedByLabel(change) }}</div>
+          <div class="timeline-crew" *ngIf="crewSummary(change)"><strong>Cuadrilla:</strong> {{ crewSummary(change) }}</div>
           <div class="timeline-reason" *ngIf="change.reason"><strong>Motivo:</strong> {{ change.reason }}</div>
         </li>
       </ol>
