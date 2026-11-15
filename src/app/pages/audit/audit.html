@@ -1,1 +1,69 @@
-<p>audit works!</p>
+<div class="audit-page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Auditoría</h1>
+      <p class="page-subtitle">Eventos del sistema registrados desde Kafka, del más reciente al más antiguo</p>
+    </div>
+    <div class="header-actions">
+      <label class="filter">
+        <span>Tópico</span>
+        <select [(ngModel)]="topic" (ngModelChange)="onTopicChange()">
+          <option value="">Todos</option>
+          <option *ngFor="let t of topics" [value]="t">{{ t }}</option>
+        </select>
+      </label>
+      <button type="button" class="btn-secondary" (click)="load()">Actualizar</button>
+    </div>
+  </header>
+
+  <div class="alert-error" *ngIf="pageError" role="alert">{{ pageError }}</div>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="loading-state">Cargando eventos...</div>
+
+    <table *ngIf="!isLoading" class="azure-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tópico</th>
+          <th>Evento</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let e of events; trackBy: trackById">
+          <tr class="clickable" [class.expanded]="expandedId === e.id" (click)="toggle(e)">
+            <td class="nowrap">{{ e.receivedAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+            <td><span class="topic-pill" [class.timeline]="e.topicName === 'audit.timeline'">{{ e.topicName }}</span></td>
+            <td>
+              <div class="summary-title">{{ summary(e).title }}</div>
+              <div class="summary-detail" *ngIf="summary(e).detail">{{ summary(e).detail }}</div>
+            </td>
+          </tr>
+          <tr *ngIf="expandedId === e.id" class="detail-row">
+            <td colspan="3">
+              <div class="meta">
+                <span>Partición: <strong>{{ e.partitionNumber ?? '—' }}</strong></span>
+                <span>Offset: <strong>{{ e.recordOffset ?? '—' }}</strong></span>
+                <span>Clave: <strong>{{ e.eventKey ?? '—' }}</strong></span>
+                <span>ID: <strong>{{ e.id }}</strong></span>
+              </div>
+              <pre class="json">{{ pretty(e) }}</pre>
+            </td>
+          </tr>
+        </ng-container>
+        <tr *ngIf="events.length === 0">
+          <td colspan="3" class="empty-state">No hay eventos registrados todavía.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <app-pagination
+      *ngIf="!isLoading && total > 0"
+      [total]="total"
+      [page]="page"
+      [pageSize]="pageSize"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)">
+    </app-pagination>
+  </div>
+</div>

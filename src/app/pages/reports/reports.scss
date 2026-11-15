@@ -1,0 +1,31 @@
+.reports-page { max-width: 1100px; margin: 0 auto; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.page-title { font-size: 1.5rem; color: #002050; margin: 0; }
+.page-subtitle { color: #64748B; margin: 0.2rem 0 0 0; font-size: 0.9rem; }
+.section-title { font-size: 1.1rem; color: #002050; margin: 1.75rem 0 0.75rem; }
+.header-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.paused-tag { margin-left: 0.5rem; padding: 0.1rem 0.5rem; border-radius: 10px; background: #FEF3C7; color: #D97706; font-size: 0.75rem; font-weight: 600; }
+
+.btn-primary { background-color: #0078D4; color: white; border: none; padding: 0.65rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+.btn-secondary { background: #E2E8F0; color: #334155; border: none; padding: 0.65rem 1.25rem; border-radius: 6px; cursor: pointer; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; }
+.kpi-card { background: white; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.kpi-label { font-size: 0.8rem; color: #64748B; text-transform: uppercase; letter-spacing: 0.03em; }
+.kpi-value { font-size: 2rem; font-weight: 700; color: #002050; }
+.kpi-success { color: #059669; }
+.kpi-danger { color: #DC2626; }
+
+.table-card { background: white; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.azure-table { width: 100%; border-collapse: collapse; text-align: left; }
+.azure-table th { padding: 0.85rem 1rem; background: #F8FAFC; color: #475569; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid #E2E8F0; }
+.azure-table td { padding: 0.85rem 1rem; border-bottom: 1px solid #E2E8F0; font-size: 0.9rem; }
+.bar-col { min-width: 200px; }
+.bar { display: inline-flex; width: 140px; height: 10px; background: #E2E8F0; border-radius: 5px; overflow: hidden; vertical-align: middle; }
+.bar-ok { background: #059669; }
+.bar-fail { background: #DC2626; }
+.bar-text { margin-left: 0.5rem; font-size: 0.8rem; color: #475569; }
+
+.empty-state, .loading-state { text-align: center; padding: 1.5rem; color: #64748B; }
+.alert-error { margin: 0 0 16px; padding: 10px 14px; border: 1px solid #f1b0b7; border-left: 4px solid #d13438; border-radius: 4px; background: #fdf3f4; color: #8a1c20; font-size: 14px; }

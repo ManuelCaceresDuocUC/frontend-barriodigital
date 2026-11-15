@@ -49,11 +49,11 @@ export const routes: Routes = [
     canActivate: [MsalGuard, roleGuard(['Admin'])] 
   },
   
-  // Auditoría (Timeline): Exclusivo Auditor
+  // Auditoría (eventos de Kafka): Auditor y Admin
   { 
     path: 'audit', 
     component: Audit, 
-    canActivate: [MsalGuard, roleGuard(['Auditor'])] 
+    canActivate: [MsalGuard, roleGuard(['Auditor', 'Admin'])] 
   },
   
   { path: '**', redirectTo: 'login' }
