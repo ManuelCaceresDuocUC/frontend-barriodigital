@@ -1,1 +1,77 @@
-<p>reports works!</p>
+<div class="reports-page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Reportería / KPIs</h1>
+      <p class="page-subtitle">
+        Métricas en tiempo real calculadas desde los eventos de Kafka
+        <span *ngIf="lastUpdate"> · Última actualización: {{ lastUpdate | date:'HH:mm:ss' }}</span>
+        <span *ngIf="paused" class="paused-tag">En pausa</span>
+      </p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-secondary" (click)="refreshNow()">Actualizar ahora</button>
+      <button type="button" class="btn-primary" (click)="togglePause()">{{ paused ? 'Reanudar' : 'Pausar' }}</button>
+    </div>
+  </header>
+
+  <div class="alert-error" *ngIf="pageError" role="alert">{{ pageError }}</div>
+  <div class="loading-state" *ngIf="isLoading">Obteniendo métricas...</div>
+
+  <ng-container *ngIf="!isLoading">
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Trámites ingresados</span>
+        <span class="kpi-value">{{ kpis.totalRequests }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Resueltos</span>
+        <span class="kpi-value kpi-success">{{ kpis.totalSuccess }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Rechazados</span>
+        <span class="kpi-value kpi-danger">{{ kpis.totalFailed }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">En proceso</span>
+        <span class="kpi-value">{{ inProgress }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Tasa de resolución</span>
+        <span class="kpi-value">{{ resolutionRate }}%</span>
+      </div>
+    </section>
+
+    <h2 class="section-title">Por tipo de trámite</h2>
+    <div class="table-card">
+      <table class="azure-table">
+        <thead>
+          <tr>
+            <th>Tipo de trámite</th>
+            <th>Ingresados</th>
+            <th>Resueltos</th>
+            <th>Rechazados</th>
+            <th class="bar-col">Resolución</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of procedures; trackBy: trackByName">
+            <td>{{ p.actionName }}</td>
+            <td><strong>{{ p.totalRequests }}</strong></td>
+            <td class="kpi-success">{{ p.successCount }}</td>
+            <td class="kpi-danger">{{ p.failedCount }}</td>
+            <td class="bar-col">
+              <div class="bar" [attr.aria-label]="percent(p.successCount, p.totalRequests) + '% resueltos'">
+                <div class="bar-ok" [style.width.%]="percent(p.successCount, p.totalRequests)"></div>
+                <div class="bar-fail" [style.width.%]="percent(p.failedCount, p.totalRequests)"></div>
+              </div>
+              <span class="bar-text">{{ percent(p.successCount, p.totalRequests) }}%</span>
+            </td>
+          </tr>
+          <tr *ngIf="procedures.length === 0">
+            <td colspan="5" class="empty-state">Aún no hay trámites registrados en Kafka.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

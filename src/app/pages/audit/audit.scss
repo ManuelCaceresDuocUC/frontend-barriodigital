@@ -1,0 +1,30 @@
+.audit-page { max-width: 1100px; margin: 0 auto; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.page-title { font-size: 1.5rem; color: #002050; margin: 0; }
+.page-subtitle { color: #64748B; margin: 0.2rem 0 0 0; font-size: 0.9rem; }
+.header-actions { display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: wrap; }
+.filter { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; color: #475569; }
+.filter select { padding: 0.55rem 0.7rem; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.9rem; }
+
+.btn-secondary { background: #E2E8F0; color: #334155; border: none; padding: 0.65rem 1.25rem; border-radius: 6px; cursor: pointer; }
+
+.table-card { background: white; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.azure-table { width: 100%; border-collapse: collapse; text-align: left; }
+.azure-table th { padding: 0.85rem 1rem; background: #F8FAFC; color: #475569; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid #E2E8F0; }
+.azure-table td { padding: 0.85rem 1rem; border-bottom: 1px solid #E2E8F0; font-size: 0.9rem; vertical-align: top; }
+.azure-table tr.clickable { cursor: pointer; }
+.azure-table tr.clickable:hover, .azure-table tr.expanded { background: #F8FAFC; }
+.nowrap { white-space: nowrap; }
+
+.topic-pill { padding: 0.15rem 0.55rem; border-radius: 4px; font-size: 0.75rem; font-family: monospace; background: #E0F2FE; color: #0369A1; }
+.topic-pill.timeline { background: #EDE9FE; color: #6D28D9; }
+.summary-title { font-weight: 600; color: #0F172A; }
+.summary-detail { margin-top: 0.2rem; color: #64748B; font-size: 0.85rem; }
+
+.detail-row td { background: #F8FAFC; }
+.meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 0.82rem; color: #334155; margin-bottom: 0.5rem; }
+.json { margin: 0; padding: 0.75rem; background: #0F172A; color: #E2E8F0; border-radius: 4px; font-size: 0.8rem; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow: auto; }
+
+.empty-state, .loading-state { text-align: center; padding: 1.5rem; color: #64748B; }
+.alert-error { margin: 0 0 16px; padding: 10px 14px; border: 1px solid #f1b0b7; border-left: 4px solid #d13438; border-radius: 4px; background: #fdf3f4; color: #8a1c20; font-size: 14px; }

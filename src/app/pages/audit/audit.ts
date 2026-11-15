@@ -1,82 +1,88 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { Pagination } from '../../shared/pagination/pagination';
+import { AUDIT_TOPICS, AuditEvent, AuditService } from '../../services/audit.service';
+import { AuditSummary, prettyJson, summarizeEvent } from '../../utils/audit-event';
 
 @Component({
   selector: 'app-audit',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="container">
-      <h2>Trazabilidad y Auditoría</h2>
-      
-      <div class="filters">
-        <input type="text" placeholder="Usuario (Email)" [(ngModel)]="filters.user" />
-        <input type="date" [(ngModel)]="filters.startDate" />
-        <input type="date" [(ngModel)]="filters.endDate" />
-        <select [(ngModel)]="filters.eventType">
-          <option value="">Todos los eventos</option>
-          <option value="REQUEST_CREATED">Trámite Creado</option>
-          <option value="REQUEST_APPROVED">Trámite Aprobado</option>
-          <option value="REQUEST_REJECTED">Trámite Rechazado</option>
-        </select>
-        <button class="btn-primary" (click)="fetchAuditLogs()">Filtrar</button>
-      </div>
-      
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Usuario</th>
-            <th>Evento</th>
-            <th>Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let log of auditLogs">
-            <td>{{ log.timestamp | date:'short' }}</td>
-            <td>{{ log.user }}</td>
-            <td>{{ log.eventType }}</td>
-            <td>{{ log.details }}</td>
-          </tr>
-          <tr *ngIf="auditLogs.length === 0">
-            <td colspan="4">No hay registros de auditoría que coincidan con los filtros.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  `,
-  styles: [`
-    .filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .filters input, .filters select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-  `]
+  imports: [CommonModule, FormsModule, Pagination],
+  templateUrl: './audit.html',
+  styleUrl: './audit.scss'
 })
 export class Audit implements OnInit {
-  auditLogs: any[] = [];
-  filters = {
-    user: '',
-    startDate: '',
-    endDate: '',
-    eventType: ''
-  };
+  readonly topics = AUDIT_TOPICS;
 
-  constructor(private http: HttpClient) {}
+  events: AuditEvent[] = [];
+  total = 0;
+  topic = '';
+  page = 1;
+  pageSize = 10;
+  isLoading = true;
+  pageError = '';
+  expandedId: number | null = null;
+
+  constructor(private auditService: AuditService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.fetchAuditLogs();
+    this.load();
   }
 
-  fetchAuditLogs() {
-    let params = new HttpParams();
-    if (this.filters.user) params = params.set('user', this.filters.user);
-    if (this.filters.startDate) params = params.set('startDate', this.filters.startDate);
-    if (this.filters.endDate) params = params.set('endDate', this.filters.endDate);
-    if (this.filters.eventType) params = params.set('eventType', this.filters.eventType);
+  onTopicChange(): void {
+    this.page = 1;
+    this.load();
+  }
 
-    this.http.get<any[]>('http://localhost:8080/api/audit', { params }).subscribe({
-      next: (data) => this.auditLogs = data,
-      error: (err) => console.error('Error cargando auditoría (BFF pendiente):', err)
+  onPageChange(page: number): void {
+    this.page = page;
+    this.load();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.page = 1;
+    this.load();
+  }
+
+  toggle(event: AuditEvent): void {
+    this.expandedId = this.expandedId === event.id ? null : event.id;
+  }
+
+  summary(event: AuditEvent): AuditSummary {
+    return summarizeEvent(event.topicName, event.payload);
+  }
+
+  pretty(event: AuditEvent): string {
+    return prettyJson(event.payload);
+  }
+
+  trackById(_: number, event: AuditEvent): number {
+    return event.id;
+  }
+
+  load(): void {
+    this.isLoading = true;
+    this.expandedId = null;
+    this.auditService.list(this.topic, this.page, this.pageSize).subscribe({
+      next: result => {
+        this.events = result.events;
+        this.total = result.total;
+        this.pageError = '';
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isLoading = false;
+        this.pageError = err.status === 403
+          ? 'No tienes permiso para ver la auditoría (se requiere rol Auditor o Admin).'
+          : err.status === 502 || err.status === 504
+            ? 'El servicio de auditoría no responde.'
+            : 'No se pudo cargar la auditoría.';
+        this.cdr.detectChanges();
+      }
     });
   }
 }
